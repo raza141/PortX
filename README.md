@@ -9,8 +9,8 @@ ___
 #### Admin control: 
 
 **Superuser** has access to all apps and their models using below credential 
-* username: raza141
-* password: Ahmed112233@@
+* username: raza....
+* password: Ahmed....11..22...33...@@
 ___
 #### App Structure and details: 
 

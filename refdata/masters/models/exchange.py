@@ -1,7 +1,10 @@
 from django.db import models
 
-from .country import Country
-from .currency import Currency
+# from .country import Country
+# from .currency import Currency
+
+from refdata.masters.models.country import Country
+from refdata.masters.models.currency import Currency
 
 class Exchange(models.Model):
     class MarketStatus(models.TextChoices):

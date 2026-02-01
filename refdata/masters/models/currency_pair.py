@@ -1,7 +1,7 @@
 from django.db import models
 
-from .currency import Currency
-
+# from .currency import Currency
+from refdata.masters.models.currency import Currency
 
 class CurrencyPair(models.Model):
     """

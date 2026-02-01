@@ -1,6 +1,8 @@
 from django.db import models
 
-from .country import  Country
+# from .country import  Country
+
+from refdata.masters.models.country import Country
 
 
 class Broker(models.Model):

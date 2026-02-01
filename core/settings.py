@@ -38,11 +38,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'masters',
-    'crm',
-    'portfolio',
-    "instruments",
-    "taxonomy",
+    "governance.crm.apps.CrmConfig",
+    "refdata.masters.apps.MastersConfig",
+    "refdata.taxonomy.apps.TaxonomyConfig",
+    "refdata.instruments.apps.InstrumentsConfig",
+    "operations.portfolio.apps.PortfolioConfig",
 
 ]
 

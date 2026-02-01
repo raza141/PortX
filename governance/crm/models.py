@@ -1,7 +1,7 @@
 from django.db import models
 
-from masters.models.country import  Country
-
+# from masters.models.country import  Country
+from refdata.masters.models.country import Country
 
 # Create your models here.
 class RM(models.Model):

@@ -1,8 +1,8 @@
 from django.db import models
 from django.conf import settings
 
-from .base import TimeStampedModel
-
+# from .base import TimeStampedModel
+from refdata.instruments.models.base import TimeStampedModel
 
 class AssetClass(TimeStampedModel):
     """
