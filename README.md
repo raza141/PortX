@@ -7,17 +7,24 @@ ___
   * masters
   * taxonomy
   * instruments
-* **governance**
+* **governance**: (what is allowed & why)
   * crm
   * Policies
-* **operation**
+* **operation**: (what happened & booking)
   * portfolio
   * ibor
-  * abor
+    * Trade blotter
+    * Cash Ledger
+    * lot (FIFO)
+    * PnL (Audit trail)
+    * Position (Snapshots)
+  * ABOR (official accounting truth) 
   * oms
-* **reporting**
-  * risk 
-  * performance
+* **reporting**: (official accounting truth)
+  * risk (VaR, Exposures, ES)
+  * performance (TWM/MWR, GIPS)
+  * Statements
+  * TAX (CGT Report, Withholding Summary)
 
 ___
 #### Admin control: 
