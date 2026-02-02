@@ -43,6 +43,10 @@ INSTALLED_APPS = [
     "refdata.taxonomy.apps.TaxonomyConfig",
     "refdata.instruments.apps.InstrumentsConfig",
     "operations.portfolio.apps.PortfolioConfig",
+    "governance.policies.apps.PoliciesConfig",
+    "operations.ibor.apps.IborConfig", # this will route to ibor app, from there it will go operation.ibor
+
+
 
 ]
 

@@ -9,3 +9,4 @@ class PortfolioConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "operations.portfolio"
     label = "portfolio"
+    verbose_name = "Operations | Portfolio"

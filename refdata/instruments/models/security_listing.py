@@ -35,8 +35,8 @@ class SecurityListing(TimeStampedModel):
     security_listing_id = models.BigAutoField(primary_key=True)
 
     security = models.ForeignKey(
-        SecurityMaster,
-        on_delete=models.CASCADE,  # if instrument is removed in dev, listings go with it
+        "instruments.SecurityMaster",
+        on_delete=models.PROTECT,  # if instrument is removed in dev, listings go with it
         related_name="listings",
         db_index=True,
     )

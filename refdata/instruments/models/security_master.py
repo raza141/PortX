@@ -79,14 +79,14 @@ class SecurityMaster(TimeStampedModel):
     )
 
     # Convenience pointer for UI. Not required for correctness.
-    primary_listing = models.ForeignKey(
-        "instruments.SecurityListing",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="primary_for_securities",
-        help_text="Optional convenience link to the primary listing row.",
-    )
+    # primary_listing = models.ForeignKey(
+    #     "instruments.SecurityListing",
+    #     null=True,
+    #     blank=True,
+    #     on_delete=models.SET_NULL,
+    #     related_name="primary_for_securities",
+    #     help_text="Optional convenience link to the primary listing row.",
+    # )
 
     status = models.CharField(
         max_length=16,

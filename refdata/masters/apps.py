@@ -10,3 +10,4 @@ class MastersConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "refdata.masters"
     label = "masters"
+    verbose_name = "Ref Data | Masters"

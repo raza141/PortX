@@ -1,9 +1,23 @@
-#### We have created below **apps** in our django Project name ***Core***:
-1. Crm
-2. Masters 
-3. Portfolio
-4. Instruments
-5. Taxonomy 
+### This app dividend into four layers and below apps:
+___
+#### Project name: **Core**
+___
+#### Layer Structure
+* **refdata**
+  * masters
+  * taxonomy
+  * instruments
+* **governance**
+  * crm
+  * Policies
+* **operation**
+  * portfolio
+  * ibor
+  * abor
+  * oms
+* **reporting**
+  * risk 
+  * performance
 
 ___
 #### Admin control: 
