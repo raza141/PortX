@@ -82,7 +82,16 @@ ___
 * LOCAL SECTOR 
 * LOCAL SECTOR TO GICS
 ____
+##### Under Operation layer Ibor layer:
+###### IBOR = Investment Book of Record
+It answers (near real-time):
+* What do I own? (positions, lots)
+* What cash do I have? (settled vs pending)
+* What’s my PnL? (realized/unrealized)
+* What changed today? (blotter + cash movements + lot movements)
 
+IBOR is driven by events: trades, corporate actions, fees, FX, cash movements.
+___
 #### We have created the below dirs to seed data papulation 
     
 
