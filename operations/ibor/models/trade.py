@@ -1,176 +1,294 @@
+# core/operations/ibor/models/trade.py
+from __future__ import annotations
+
 from django.db import models
-from django.utils import timezone
+from .common import IborTimeStampedModel, IborState
 
 
-class IborTrade(models.Model):
+class IborSide(models.TextChoices):
+    BUY = "BUY", "Buy"
+    SELL = "SELL", "Sell"
+
+class IborTradeEvent(IborTimeStampedModel):
     """
-    IBOR Trade Blotter (book of record for executed trades).
-    Source can be MANUAL today; OMS/VENUE later will feed the same table.
+    Canonical trade event (broker-agnostic).
+
+    This is the core 'TRD_EVT' for IBOR.
+    - Created from manual entry OR from approved staged trades.
+    - Must support versioning/corrections without deleting history.
+    - State-driven truth levels (EXEC/CONF/SETTLED).
     """
 
-    class Side(models.TextChoices):
-        BUY = "B", "Buy"
-        SELL = "S", "Sell"
-
-    class Status(models.TextChoices):
-        BOOKED = "BOK", "Booked"
-        CANCELLED = "CXL", "Cancelled"
-        REVERSED = "REV", "Reversed"  # cancellation with reversal record
-        PENDING = "PND", "Pending"    # optional if you want pre-book state later
-
-    class Source(models.TextChoices):
-        MANUAL = "MAN", "Manual"
-        OMS = "OMS", "OMS"
-        VENUE = "VEN", "Venue/API"
-        IMPORT = "IMP", "Import"
-
-    trd_id = models.BigAutoField(primary_key=True, db_column="trd_id")
-
-    acct = models.ForeignKey(
-        "portfolio.Account",
-        on_delete=models.PROTECT,
-        related_name="ibor_trades",
-        db_column="acct_id",
-        db_index=True,
-        help_text="Booking account. All trades are booked at account level (institution standard).",
+    # Lineage & versioning
+    source_system = models.CharField(
+        max_length=40,
+        help_text="Adapter/system identifier (e.g., 'psx_broker_x', 'sarwa', 'manual').",
+    )
+    external_ref = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Broker voucher/contract note id (should be stable for dedupe).",
+    )
+    version_no = models.PositiveIntegerField(
+        default=1,
+        help_text="Version number for the same external_ref (CORR creates a new version).",
+    )
+    replaces_trade = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="replacement_trades",
+        help_text="If this is a correction, points to the trade it replaces.",
     )
 
-    listing = models.ForeignKey(
+    # Who/where
+    portfolio = models.ForeignKey(
+        "portfolio.Portfolio",
+        on_delete=models.PROTECT,
+        related_name="ibor_trades",
+        help_text="Portfolio owning the position (multi-base supported via portfolio.base_ccy).",
+    )
+    broker = models.ForeignKey(
+        "masters.Broker",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ibor_trades",
+        help_text="Broker/counterparty executing or confirming the trade (optional in V1).",
+    )
+    exec_venue = models.ForeignKey(
+        "masters.Exchange",   # or masters.ListingVenue if you have that
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ibor_trades",
+        help_text="Execution venue/exchange (PSX, NASDAQ, OTC venue). Optional; can default from instrument.",
+    )
+
+    # What (What came from instrument)
+    instrument = models.ForeignKey(
         "instruments.SecurityListing",
         on_delete=models.PROTECT,
         related_name="ibor_trades",
-        db_column="list_id",
-        db_index=True,
-        help_text="Tradable object (ticker+venue+currency). Trades link to listing, not the master instrument.",
+        help_text="Instrument master key (map symbol/ISIN/ticker into this).",
+    )
+    asset_class = models.ForeignKey(
+        "instruments.AssetClass",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ibor_trades",
+        help_text="Optional snapshot of asset class at trade time. Prefer deriving from instrument.",
+    )
+    asset_sub_class = models.ForeignKey(
+        "instruments.AssetSubClass",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ibor_trades",
+        help_text="Optional snapshot of asset sub-class at trade time. Prefer deriving from instrument.",
     )
 
-    side_cd = models.CharField(
-        max_length=1,
-        choices=Side.choices,
-        db_column="side_cd",
-        help_text="Trade side: B=Buy, S=Sell.",
+    side = models.CharField(
+        max_length=4,
+        choices=IborSide.choices,
+        help_text="BUY or SELL.",
     )
-
-    qty = models.DecimalField(
-        max_digits=24,
-        decimal_places=8,
-        db_column="qty",
-        help_text="Executed quantity. Use positive numbers; side indicates direction.",
-    )
-
-    px = models.DecimalField(
-        max_digits=24,
+    quantity = models.DecimalField(
+        max_digits=28,
         decimal_places=10,
-        db_column="px",
-        help_text="Executed price in listing price currency.",
+        help_text="Trade quantity (supports fractional shares).",
     )
-
-    trd_ccy = models.ForeignKey(
+    price = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        help_text="Trade price per unit.",
+    )
+    # ✅ Currency should come from masters
+    trade_ccy = models.ForeignKey(
         "masters.Currency",
         on_delete=models.PROTECT,
-        related_name="ibor_trades",
-        db_column="trd_ccy_id",
-        help_text="Trade/price currency. Usually equals listing price currency; stored for audit/snapshot.",
+        related_name="ibor_trade_ccy_trades",
+        help_text="Trade/contract currency (ISO3 from masters).",
     )
 
-    trd_ts = models.DateTimeField(
-        default=timezone.now,
-        db_column="trd_ts",
-        db_index=True,
-        help_text="Execution timestamp (trade time).",
+    settle_ccy = models.ForeignKey(
+        "masters.Currency",
+        null=True, blank=True,
+        on_delete=models.PROTECT,
+        related_name="ibor_settle_ccy_trades",
+        help_text="Settlement currency (optional; defaults to trade_ccy if null).",
     )
 
-    stl_dt = models.DateField(
-        null=True,
-        blank=True,
-        db_column="stl_dt",
-        db_index=True,
-        help_text="Settlement/value date. Drives pending vs settled cash.",
+    trade_dt = models.DateField(
+        help_text="Trade date (economic date).",
+    )
+    settle_dt = models.DateField(
+        help_text="Settlement date (cash/security movement date).",
     )
 
-    gross_amt = models.DecimalField(
+    # Economics
+    gross_amount = models.DecimalField(
         max_digits=28,
         decimal_places=10,
-        db_column="gross_amt",
-        null=True,
-        blank=True,
-        help_text="Gross consideration in trade currency. Optional if derived = qty*px.",
+        help_text="Gross = quantity * price in trade_ccy (before charges).",
     )
-
-    fees_amt = models.DecimalField(
-        max_digits=18,
-        decimal_places=6,
-        default=0,
-        db_column="fees_amt",
-        help_text="Total fees/commission in trade currency (positive number).",
-    )
-
-    tax_amt = models.DecimalField(
-        max_digits=18,
-        decimal_places=6,
-        default=0,
-        db_column="tax_amt",
-        help_text="Taxes/levies/withholding applied to this trade in trade currency.",
-    )
-
-    net_amt = models.DecimalField(
+    net_amount = models.DecimalField(
         max_digits=28,
         decimal_places=10,
+        help_text="Net amount after charges (in settlement currency logic).",
+    )
+
+    # Lifecycle
+    state_cd = models.CharField(
+        max_length=10,
+        choices=IborState.choices,
+        default=IborState.EXEC,
+        help_text="Lifecycle state for truth level selection (EXEC/CONF/SETTLED/CXL/CORR).",
+    )
+    state_ts = models.DateTimeField(
         null=True,
         blank=True,
-        db_column="net_amt",
-        help_text="Net cash impact in trade currency (buy is typically negative, sell positive). Optional if derived.",
+        help_text="Timestamp when current state was achieved (optional).",
     )
 
-    ext_ref = models.CharField(
-        max_length=80,
-        null=True,
-        blank=True,
-        db_column="ext_ref",
-        help_text="External reference (broker exec id, venue trade id, import reference).",
-    )
-
-    src_cd = models.CharField(
-        max_length=3,
-        choices=Source.choices,
-        default=Source.MANUAL,
-        db_column="src_cd",
-        db_index=True,
-        help_text="Where this trade came from (manual/OMS/venue/import).",
-    )
-
-    sts_cd = models.CharField(
-        max_length=3,
-        choices=Status.choices,
-        default=Status.BOOKED,
-        db_column="sts_cd",
-        db_index=True,
-        help_text="Booking status (booked/cancelled/reversed).",
-    )
-
-    notes = models.CharField(
-        max_length=255,
+    memo = models.TextField(
         blank=True,
         default="",
-        db_column="notes",
-        help_text="Free text notes for ops/audit.",
+        help_text="Optional free-text notes (parsing notes, ops adjustments, etc.).",
     )
 
-    # audit
-    crt_by = models.IntegerField(default=101, db_column="crt_by", help_text="Created by user id.")
-    crt_ts = models.DateTimeField(auto_now_add=True, db_column="crt_ts", help_text="Create timestamp.")
-    upd_ts = models.DateTimeField(auto_now=True, db_column="upd_ts", help_text="Update timestamp.")
-
     class Meta:
-        db_table = "px_trd"
-        verbose_name = "IBOR Trade"
-        verbose_name_plural = "IBOR Trades"
-        ordering = ["-trd_ts"]
+        db_table = "ibor_trd_evt"
         indexes = [
-            models.Index(fields=["acct", "trd_ts"], name="ix_trd_acct_ts"),
-            models.Index(fields=["listing", "trd_ts"], name="ix_trd_list_ts"),
-            models.Index(fields=["sts_cd", "trd_ts"], name="ix_trd_sts_ts"),
+            models.Index(fields=["portfolio", "trade_dt"]),
+            models.Index(fields=["portfolio", "settle_dt"]),
+            models.Index(fields=["instrument", "trade_dt"]),
+            models.Index(fields=["state_cd", "trade_dt"]),
+            models.Index(fields=["source_system", "external_ref", "version_no"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["source_system", "external_ref", "version_no"],
+                name="uq_ibor_trd_evt_src_ref_ver",
+            )
         ]
 
     def __str__(self) -> str:
-        return f"{self.trd_id} {self.side_cd} {self.qty}@{self.px}"
+        return f"{self.portfolio_id}:{self.instrument_id}:{self.side} {self.quantity} @ {self.price} ({self.trade_dt})"
+
+
+class IborChargeType(models.TextChoices):
+    """
+    Generic charge types. Use description for broker-specific labels.
+    """
+    COMM = "COMM", "Commission"
+    TAX = "TAX", "Tax"
+    LEVY = "LEVY", "Levy/Fee"
+    VAT = "VAT", "VAT/GST/SST"
+    STAMP = "STAMP", "Stamp duty"
+    OTHER = "OTHER", "Other"
+
+
+class IborChargeComponent(IborTimeStampedModel):
+    """
+    Charge component for a trade (flexible list).
+
+    Examples
+    --------
+    - PSX Laga, SECP Laga, NCCPL, CDC, Adv Tax, SST
+    - US SEC fee, FINRA fee
+    - Platform fees on Sarwa
+    """
+
+    trade = models.ForeignKey(
+        IborTradeEvent,
+        on_delete=models.CASCADE,
+        related_name="charges",
+        help_text="Trade that this charge belongs to.",
+    )
+    charge_type_cd = models.CharField(
+        max_length=10,
+        choices=IborChargeType.choices,
+        default=IborChargeType.OTHER,
+        help_text="Normalized charge category (COMM/TAX/LEVY/VAT/etc.).",
+    )
+    description = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Broker label (e.g., 'PSX Laga', 'SST', 'SEC fee').",
+    )
+    rate = models.DecimalField(
+        max_digits=18,
+        decimal_places=10,
+        null=True,
+        blank=True,
+        help_text="Optional rate (percent/bps) if available from source.",
+    )
+    amount = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        help_text="Charge amount (positive number).",
+    )
+    currency = models.CharField(
+        max_length=3,
+        help_text="Charge currency ISO3.",
+    )
+    is_withholding = models.BooleanField(
+        default=False,
+        help_text="True if this is withholding tax (useful later for dividends/corporate actions).",
+    )
+
+    class Meta:
+        db_table = "ibor_chg_cmp"
+        indexes = [
+            models.Index(fields=["trade"]),
+            models.Index(fields=["charge_type_cd"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.trade_id}:{self.charge_type_cd}:{self.amount} {self.currency}"
+
+
+class IborTradeStateHistory(IborTimeStampedModel):
+    """
+    Optional: Keep a full timeline of state transitions for audit and replay.
+
+    V1 can work without it (store only current state on trade),
+    but this gives you future Gen3 / bi-temporal behavior without redesign.
+    """
+
+    trade = models.ForeignKey(
+        IborTradeEvent,
+        on_delete=models.CASCADE,
+        related_name="state_history",
+        help_text="Trade whose state changed.",
+    )
+    from_state = models.CharField(
+        max_length=10,
+        choices=IborState.choices,
+        null=True,
+        blank=True,
+        help_text="Previous state (null if first state record).",
+    )
+    to_state = models.CharField(
+        max_length=10,
+        choices=IborState.choices,
+        help_text="New state.",
+    )
+    transitioned_at = models.DateTimeField(
+        help_text="Timestamp when the transition occurred.",
+    )
+    reason = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Reason (e.g., 'broker confirm received', 'settlement file matched').",
+    )
+
+    class Meta:
+        db_table = "ibor_trd_state_hist"
+        indexes = [
+            models.Index(fields=["trade", "transitioned_at"]),
+            models.Index(fields=["to_state"]),
+        ]

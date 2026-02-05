@@ -7,25 +7,31 @@ ___
   * masters
   * taxonomy
   * instruments
+___
 * **governance**: (what is allowed & why)
   * crm
   * Policies
+___
 * **operation**: (what happened & booking)
   * portfolio
-  * ibor
+  * IBOR (Investment-focused (Market price, intraday, broader/granular views for performance/risk))
     * Trade blotter
     * Cash Ledger
     * lot (FIFO)
-    * PnL (Audit trail)
+    * Valuation
     * Position (Snapshots)
-  * ABOR (official accounting truth) 
-  * oms
+  * ABOR (official accounting truth)
+    * ABOR is accounting-focused (Market price, NAV, chart of acc, period close, reconciliations)
+  * PBOR: IBOR plus more (Performance results + risk exposures + refernce/adjusted data)
+  * CBOR
+  * MBOR = IBOR + ABOR + CBOR + PBOR
+  * OMS
+___
 * **reporting**: (official accounting truth)
   * risk (VaR, Exposures, ES)
   * performance (TWM/MWR, GIPS)
   * Statements
   * TAX (CGT Report, Withholding Summary)
-
 ___
 #### Admin control: 
 
