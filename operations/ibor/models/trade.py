@@ -20,20 +20,24 @@ class IborTradeEvent(IborTimeStampedModel):
     """
 
     # Lineage & versioning
+    # where the trade come from
     source_system = models.CharField(
         max_length=40,
-        help_text="Adapter/system identifier (e.g., 'psx_broker_x', 'sarwa', 'manual').",
+        help_text="Where the trade come from Adapter/system identifier (e.g., 'psx_broker_x', 'sarwa', 'manual').",
     )
+    # The broker or source’s own trade identifier (voucher / contract note / execution id).
     external_ref = models.CharField(
         max_length=120,
         blank=True,
         default="",
-        help_text="Broker voucher/contract note id (should be stable for dedupe).",
+        help_text="The broker or source’s own trade identifier (voucher / contract note / execution id).",
     )
+    # Which “revision” of the same external trade ref this row represents.
     version_no = models.PositiveIntegerField(
         default=1,
         help_text="Version number for the same external_ref (CORR creates a new version).",
     )
+    # If a broker sends a correction, you don’t edit the old row — you create a new trade row and point it to the old one.
     replaces_trade = models.ForeignKey(
         "self",
         null=True,

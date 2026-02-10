@@ -77,4 +77,4 @@ class Account(models.Model):
         ]
 
     def __str__(self):
-        return self.acct_cd
+        return f"{self.acct_cd} @ Mr {self.investor}"

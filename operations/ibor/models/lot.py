@@ -40,7 +40,7 @@ class IborTaxLot(IborTimeStampedModel):
     open_qty = models.DecimalField(
         max_digits=28,
         decimal_places=10,
-        help_text="Original lot quantity.",
+        help_text="The original quantity that this lot was created with..",
     )
     remaining_qty = models.DecimalField(
         max_digits=28,

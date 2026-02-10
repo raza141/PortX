@@ -88,7 +88,7 @@ class IPSVersion(models.Model):
                                   help_text="Current flag, e.g. True")
     chg_rsn = models.CharField(max_length=240, null=True, blank=True, db_column="chg_rsn",
                                help_text="Change reason, e.g. Updated risk limits")
-
+    # This should be link to FK -----------------------------
     aprv_by = models.IntegerField(null=True, blank=True, db_column="aprv_by",
                                   help_text="Approver user id, e.g. 101")
     aprv_ts = models.DateTimeField(null=True, blank=True, db_column="aprv_ts",

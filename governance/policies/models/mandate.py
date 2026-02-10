@@ -25,6 +25,19 @@ class Mandate(models.Model):
         POST_TRADE_ACK = "PST", "Post-trade acknowledgement"
         NONE = "NON", "None"
 
+    class ReportingMode(models.TextChoices):
+        MONTHLY = "M", "Monthly"
+        QUARTERLY = "Q", "Quarterly"
+        ANNUALLY = "A", "Annually"
+
+    class ReportingDeliveryMode(models.TextChoices):
+        EMAIL = "E", "Email"
+        TEXT = "T", "Text"
+        PUSH_NOTICE = "P", "PUSH_NOTICE"
+        WHATSAPP = "W", "Whatsapp"
+        OTHER = "O", "Other"
+
+
     mand_id = models.BigAutoField(primary_key=True, db_column="mand_id", help_text="Mandate key, e.g. 3001")
 
     investor = models.ForeignKey(
@@ -85,10 +98,16 @@ class Mandate(models.Model):
         help_text="Default fee schedule, e.g. 1% mgmt",
     )
 
-    rpt_freq_txt = models.CharField(max_length=20, null=True, blank=True, db_column="rpt_freq_txt",
-                                    help_text="Reporting frequency, e.g. Quarterly")
-    rpt_dlvr_txt = models.CharField(max_length=20, null=True, blank=True, db_column="rpt_dlvr_txt",
-                                    help_text="Reporting delivery, e.g. Email PDF")
+    rpt_freq_txt = models.CharField(max_length=3,
+                                    choices=ReportingMode.choices,
+                                    default=ReportingMode.QUARTERLY,
+                                    help_text="ReportingMode, e.g. QUARTERLY"
+    )
+    rpt_dlvr_txt = models.CharField(max_length=3,
+                                    choices=ReportingDeliveryMode.choices,
+                                    default=ReportingDeliveryMode.EMAIL, db_column="rpt_dlvr_txt",
+                                    help_text="Reporting delivery, e.g. Email PDF"
+    )
 
     act_ips_ver = models.ForeignKey(
         "policies.IPSVersion",
