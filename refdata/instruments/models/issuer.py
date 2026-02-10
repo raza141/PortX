@@ -26,13 +26,16 @@ class Issuer(TimeStampedModel):
         ACTIVE = "ACTIVE", "Active"
         INACTIVE = "INACTIVE", "Inactive"
 
-    issuer_id = models.BigAutoField(primary_key=True)
+    issuer_id = models.BigAutoField(primary_key=True,
+                                    help_text="Security Issuer organization ID")
 
     # Human/legal name shown in reports.
-    issuer_name = models.CharField(max_length=255)
+    issuer_name = models.CharField(max_length=255,
+                                   help_text="Security Issuer organization Name")
 
     # Stable short code used internally (e.g., PIBTL, AAPL, GOVT_PK).
-    issuer_code = models.CharField(max_length=32, unique=True, db_index=True)
+    issuer_code = models.CharField(max_length=64, unique=True, db_index=True,
+                                   help_text="Internally generated code for the issuer e.e.ISS_PK_00000123.")
 
     issuer_type = models.CharField(max_length=16, choices=IssuerType.choices, default=IssuerType.COMPANY)
 
@@ -46,26 +49,26 @@ class Issuer(TimeStampedModel):
         help_text="Domicile/registered country.py of the issuer.",
     )
 
-    headquarters_city = models.CharField(max_length=128, blank=True, default="")
+    headquarters_city = models.CharField(max_length=128, blank=True, default="",
+                                         help_text="City of the headquarters.",)
 
     # Legal Entity Identifier (20 chars). Not all issuers have it.
     issuer_lei = models.CharField(
-        max_length=32,  # keep flexible; some data sources include formatting
+        max_length=64,  # keep flexible; some data sources include formatting
         blank=True,
         default="",
         db_index=True,
         help_text="LEI (if available). Should be unique when present.",
     )
-
-    # GICS sector is taxonomy data. FK can be optional.
-    # Replace with your actual taxonomy model when ready.
-    gics_sector = models.ForeignKey(
-        "taxonomy.GicsSector",
+    # Issuer sector in
+    local_sector = models.ForeignKey(
+        "taxonomy.LocalSector",  # your PSX sector table
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="issuers",
-        help_text="GICS sector mapping (optional).",
+        db_index=True,
+        help_text=" Local sector classification (source: PSX).",
     )
 
     # Fiscal year-end month: 1-12. (June = 6)
@@ -85,7 +88,8 @@ class Issuer(TimeStampedModel):
         help_text="Parent issuer/legal entity (optional).",
     )
 
-    website = models.URLField(blank=True, default="")
+    website = models.URLField(blank=True, default="",
+                              help_text="Website of the issuer (optional).")
 
     issuer_status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE, db_index=True)
 
@@ -107,6 +111,7 @@ class Issuer(TimeStampedModel):
         indexes = [
             models.Index(fields=["issuer_status", "issuer_type"]),
             models.Index(fields=["country", "issuer_status"]),
+            models.Index(fields=["country", "local_sector", "issuer_status"]),
         ]
 
     def __str__(self) -> str:

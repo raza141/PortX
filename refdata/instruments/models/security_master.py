@@ -41,7 +41,7 @@ class SecurityMaster(TimeStampedModel):
     # Full instrument name for reports/admin screens.
     security_name = models.CharField(
         max_length=255,
-        help_text="Instrument display name (e.g., 'Pakistan International Bulk Transportation - Ordinary Share').",
+        help_text="Instrument display name (e.g.,'Pakistan International Bulk Transportation - Ordinary Share').",
     )
 
     issuer = models.ForeignKey(
@@ -60,6 +60,16 @@ class SecurityMaster(TimeStampedModel):
         help_text="Sub-asset class controlling terms family and validation flags.",
     )
 
+    gics_sub_industry = models.ForeignKey(
+        "taxonomy.GicsSubIndustry",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="securities",
+        db_index=True,
+        help_text="GICS sub-industry classification (security-level override; defaults from issuer mapping).",
+    )
+
     # Optional: if not set, can be derived from issuer.country.py for MVP.
     domicile_country = models.ForeignKey(
         "masters.Country",
@@ -67,7 +77,7 @@ class SecurityMaster(TimeStampedModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="domiciled_securities",
-        help_text="Instrument domicile/registration country.py (nullable; often same as issuer country.py).",
+        help_text="Instrument domicile/registration country (nullable; often same as issuer country).",
     )
 
     # Economic/base currency of the instrument (not necessarily listing trading currency).

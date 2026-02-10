@@ -34,17 +34,26 @@ class FeeSchedule(models.Model):
         AVG_MONTHLY_AUM = "average_monthly_AUM", "Average Monthly AUM"
         AVG_QUARTERLY_AUM = "average_quarterly_AUM", "Average Quarterly AUM"
 
-    fee_name = models.CharField(max_length=120, unique=True)
+    fee_name = models.CharField(max_length=120, unique=True,
+                                help_text="PortX Promo. or PortX 2 and 20"
+                                )
     # Store bps as integer (e.g., 150 = 1.5%)
-    mgmt_fee_bps = models.PositiveIntegerField()
-    billing_frequency = models.CharField(choices=BillingFrequency.choices, default=BillingFrequency.QUARTERLY, )
+    mgmt_fee_bps = models.PositiveIntegerField(
+        default=0,
+        help_text="Mgmt Fee store in bps format like 150 = 1.5%",
+    )
+    billing_frequency = models.CharField(choices=BillingFrequency.choices, default=BillingFrequency.QUARTERLY,)
     aum_measurement = models.CharField(choices=AumMeasurement.choices, max_length=30,
                                        default=AumMeasurement.AVG_DAILY_AUM, )
-    tiering_flag = models.BooleanField(default=False)
+    tiering_flag = models.BooleanField(default=False,
+                                       help_text="Tiering flag for fee_schedule"
+                                       )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE, )
     #
-    performance_fee_pct = models.DecimalField(
-        max_digits=8, decimal_places=4, null=True, blank=True
+    performance_fee_pct = models.DecimalField(default=0,
+        max_digits=8, decimal_places=4,
+        null=True, blank=True,
+        help_text="performance_fee_pct add in percent like 0.2000 = 20%"
     )
 
     effective_date = models.DateField()
@@ -62,12 +71,15 @@ class FeeSchedule(models.Model):
     fee_inclusive_of_tax = models.BooleanField(default=False)
     # Store as a decimal (e.g., 0.0500 = 5%)
     vat_rate = models.DecimalField(max_digits=5, decimal_places=4,
-                                   default=0.05)
+                                   default=0.05,
+                                   help_text="VAT rate for fee_schedule 0.0500 = 5%")
     # Minimum fee amount charged for the billing period (e.g., AED 50)
     min_fee_amount = models.DecimalField(max_digits=20, decimal_places=2,
-                                         default=0.00, null=True, blank=True)
+                                         default=0.00, null=True, blank=True,
+                                         help_text="Minimum fee amount for fee_schedule in currency format like AED 50")
     max_fee_amount = models.DecimalField(max_digits=20, decimal_places=2,
-                                         default=0.00, null=True, blank=True)
+                                         default=0.00, null=True, blank=True,
+                                         help_text="Maximum fee amount for fee_schedule in currency format like AED 250")
     # audit fields
     created_by = models.IntegerField(default=101)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -4,8 +4,8 @@ from django.contrib import admin
 
 from .models.account import Account
 from .models.portfolio import Portfolio
-
+from .models.portfolio_account import PortfolioAccountMap
 
 admin.site.register(Account)
 admin.site.register(Portfolio)
-# admin.site.register(PortfolioAccount)
+admin.site.register(PortfolioAccountMap)

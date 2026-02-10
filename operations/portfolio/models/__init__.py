@@ -1,10 +1,12 @@
-from .account import Account
 from .portfolio import Portfolio
-# from .portfolio_account import PortfolioAccount
+from .account import Account
+from .portfolio_account import PortfolioAccountMap
+
 
 
 __all__ = [
     "Account",
     "Portfolio",
-    # "PortfolioAccount",
+    "PortfolioAccountMap",
+
 ]

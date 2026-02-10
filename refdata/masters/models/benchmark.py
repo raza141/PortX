@@ -44,16 +44,25 @@ class Benchmark(models.Model):
         TR_GROSS = "TRG", "Total Return (Gross)"
         TR_NET = "TRN", "Total Return (Net)"
 
-    benchmark_type = models.CharField(max_length=3, choices=BenchmarkType.choices, default=BenchmarkType.INDEX)
-    benchmark_role = models.CharField(max_length=3, choices=BenchmarkRole.choices, default=BenchmarkRole.MARKET)
-    segment = models.CharField(max_length=3, choices=Segment.choices, null=True, blank=True)
+    benchmark_type = models.CharField(max_length=3, choices=BenchmarkType.choices, default=BenchmarkType.INDEX,
+                                      help_text="Benchmark type e.g. Index, Blend, Absolute"
+                                      )
+    benchmark_role = models.CharField(max_length=3, choices=BenchmarkRole.choices, default=BenchmarkRole.MARKET,
+                                      help_text="Benchmark role e.g. Market, Fixed Income, Style"
+                                      )
+    segment = models.CharField(max_length=3, choices=Segment.choices, null=True, blank=True,
+                               help_text="Benchmark segment e.g. Market, Fixed Income, Style"
+                               )
 
-    benchmark_name = models.CharField(max_length=120)
-    ticker = models.CharField(max_length=40, null=True, blank=True)
-    provider = models.CharField(max_length=80, null=True, blank=True)
+    benchmark_name = models.CharField(max_length=120,
+                                      help_text="Full Benchmark name e.g. KSE-100 Karachi 100-index")
+    ticker = models.CharField(max_length=40, null=True, blank=True,
+                              help_text="Ticker e.g. KSE-100 Karachi 100-index")
+    provider = models.CharField(max_length=80, null=True, blank=True,
+                                help_text="Provider e.g. KSE-100 Karachi 100-index")
 
-    # currency should be FK (as we discussed)
-    currency = models.ForeignKey(
+    # currency should be FK  from masters.currency
+    ccy_code = models.ForeignKey(
         "masters.Currency",
         to_field="code",
         db_column="code",
@@ -63,14 +72,18 @@ class Benchmark(models.Model):
         related_name="benchmarks",
     )
 
-    weighting_method = models.CharField(max_length=3, choices=WeightingMethod.choices, null=True, blank=True)
+    weighting_method = models.CharField(max_length=3, choices=WeightingMethod.choices, null=True, blank=True,
+                                        help_text="Weighting method e.g. Price weighted, FF")
     return_type = models.CharField(max_length=3, choices=ReturnType.choices, default=ReturnType.PRICE_RETURN)
 
-    methodology_url = models.URLField(null=True, blank=True)
+    methodology_url = models.URLField(null=True, blank=True,
+                                      help_text="Methodology URL e.g. https://market.karachi.edu")
 
-    status = models.CharField(max_length=3, choices=Status.choices, default=Status.ACTIVE)
+    status = models.CharField(max_length=3, choices=Status.choices, default=Status.ACTIVE,
+                              help_text="Benchmark status e.g. Active")
 
     created_by = models.IntegerField(default=101)
+    #djano ingestion auto_now works, however in raw-sql i need to set default now()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -87,5 +100,5 @@ class Benchmark(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.benchmark_name} ({self.currency})"
+        return f"{self.benchmark_name} ({self.ccy_code})"
 

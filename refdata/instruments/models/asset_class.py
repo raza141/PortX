@@ -23,25 +23,29 @@ class AssetClass(TimeStampedModel):
 
     # Stable code used across the system (do NOT change once in production).
     # Examples: EQTY, FI, FUND, CASH, FX
-    asset_class_code = models.CharField(max_length=16, unique=True, db_index=True)
+    asset_class_code = models.CharField(max_length=16, unique=True, db_index=True,
+                                        help_text="Asset class code e.g. FI")
 
     # Display name (can be changed without breaking references)
-    asset_class_name = models.CharField(max_length=64)
+    asset_class_name = models.CharField(max_length=64,
+                                        help_text="Asset class name e.g. Fixed Income")
 
     # Short institutional description (used in admin/help text)
-    asset_class_description = models.TextField(blank=True, default="")
+    asset_class_description = models.TextField(blank=True, default="",
+                                               help_text="Short institutional description")
 
     # Coarse risk category used for dashboards (not a risk model)
-    risk_bucket = models.CharField(max_length=16, choices=RiskBucket.choices)
+    risk_bucket = models.CharField(max_length=16, choices=RiskBucket.choices,
+                                   help_text="Risk bucket e.g. Low/High")
 
     # Soft active flag (avoid deleting reference data)
     is_active = models.BooleanField(default=True, db_index=True)
 
     # Used for consistent UI ordering (menus, dropdowns, reports)
-    sort_order = models.PositiveSmallIntegerField(default=0)
+    sort_order = models.PositiveSmallIntegerField(default=0,
+                                                  help_text="Sort order for better UI")
 
-    # Who created the reference row (optional for MVP)
-    # NOTE: If you want a hard default like 101, ensure a user with id=101 exists.
+    # Audit field
     created_by = models.IntegerField(default=101)
 
     class Meta:
@@ -54,7 +58,7 @@ class AssetClass(TimeStampedModel):
             # models.UniqueConstraint(fields=["sort_order"], name="uq_asset_class_sort_order"),
         ]
         indexes = [
-            models.Index(fields=["is_active", "sort_order"]),
+            models.Index(fields=["is_active", "sort_order"])
         ]
 
     def __str__(self) -> str:

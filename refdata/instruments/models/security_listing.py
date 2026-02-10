@@ -32,13 +32,15 @@ class SecurityListing(TimeStampedModel):
         INACTIVE = "INACTIVE", "Inactive"
         DELISTED = "DELISTED", "Delisted"
 
-    security_listing_id = models.BigAutoField(primary_key=True)
+    security_listing_id = models.BigAutoField(primary_key=True,
+                                              help_text="ID")
 
     security = models.ForeignKey(
         "instruments.SecurityMaster",
         on_delete=models.PROTECT,  # if instrument is removed in dev, listings go with it
         related_name="listings",
         db_index=True,
+        help_text="Issuer ID e.g. PIBTL"
     )
 
     # NOTE: Replace "masters.Exchange" with your actual exchange.py model path

@@ -114,4 +114,30 @@ ___
 * instrument/management/commands/seed_instrument
 * taxonomy/management/commands/seed_taxonomy
     
-    
+    ____
+### How App flow will work:
+Business flow (real world)
+
+1. Investor onboarding → RM assigned
+2. Create Mandate (contract container)
+3. Create IPSVersion (policy snapshot; effective-dated)
+4. Create Portfolio(s) (reporting books)
+5. Create Account(s) at broker/custodian
+6. Map Portfolio ↔ Account (which account funds/trades which portfolio)
+___
+### Then investing starts:
+
+7. Funding / withdrawals hit cash ledger
+8. Trades are booked (buy/sell)
+9. IBOR booking engine creates/updates:
+10. Position lots (for FIFO cost)
+11. Cash ledger postings (settlement cash)
+12. Position aggregates (optional table or computed)
+13. Pricing/FX (later) → valuation, unrealized PnL 
+14. Performance reporting (ABOR/GIPS layer) consumes IBOR outputs
+___
+### DB flow (DB language)
+
+- Trades and cash events are fact tables 
+- Lots and cash ledger are derived posting tables (booked results)
+- Mapping tables resolve “what account belongs to what book”

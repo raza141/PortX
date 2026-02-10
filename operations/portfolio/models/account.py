@@ -1,8 +1,13 @@
 from django.db import models
+from django.utils import timezone
+from django.db.models import Q, F
 
 
-# Create your models here.
 class Account(models.Model):
+    """
+    px_acct_hdr: custody/broker account (belongs to investor)
+    """
+
     class AccountType(models.TextChoices):
         BROKERAGE = "BRK", "Brokerage"
         CUSTODY = "CUS", "Custody"
@@ -16,66 +21,60 @@ class Account(models.Model):
         SUSPENDED = "SUS", "Suspended"
         RESTRICTED = "RST", "Restricted"
 
+    acct_id = models.BigAutoField(primary_key=True, db_column="acct_id", help_text="Account key, e.g. 8001")
+
     investor = models.ForeignKey(
         "crm.Investor",
         on_delete=models.CASCADE,
-        related_name="accounts"
+        related_name="accounts",
+        db_column="inv_id",
+        help_text="Account owner investor, e.g. INV_000123",
     )
 
     broker = models.ForeignKey(
         "masters.Broker",
         on_delete=models.PROTECT,
-        related_name="accounts"
+        related_name="accounts",
+        db_column="broker_id",
+        help_text="Broker ref, e.g. IBKR",
     )
 
-    # This is the real account code at the broker.py (SCS7663 / SWT613DC96 etc.)
-    account_code_at_broker = models.CharField(max_length=60, null=False, blank=False)
-
-    account_type = models.CharField(
-        max_length=3,
-        choices=AccountType.choices,
-        default=AccountType.BROKERAGE
+    acct_cd = models.CharField(max_length=60, db_index=True, db_column="acct_cd",
+                               blank=True,
+                               help_text="Broker account code, e.g. U1234567"
     )
 
-    # Link currency to your existing masters.Currency table
-    currency = models.ForeignKey(
+    acct_tp_cd = models.CharField(max_length=3, choices=AccountType.choices, default=AccountType.BROKERAGE,
+                                  db_column="acct_tp_cd", help_text="Account type, e.g. BRK")
+
+    ccy = models.ForeignKey(
         "masters.Currency",
         on_delete=models.PROTECT,
         related_name="accounts",
-        null=True,
-        blank=True
+        null=True, blank=True,
+        db_column="ccy_id",
+        help_text="Account currency, e.g. AED",
     )
 
-    status = models.CharField(
-        max_length=3,
-        choices=Status.choices,
-        default=Status.OPEN
-    )
+    sts_cd = models.CharField(max_length=3, choices=Status.choices, default=Status.OPEN,
+                              db_column="sts_cd", help_text="Account status, e.g. OPN")
 
-    opened_date = models.DateField(null=True, blank=True)
-    closed_date = models.DateField(null=True, blank=True)
+    opn_dt = models.DateField(null=True, blank=True, db_column="opn_dt", help_text="Opened date, e.g. 2026-02-01")
+    cls_dt = models.DateField(null=True, blank=True, db_column="cls_dt", help_text="Closed date, e.g. 2027-06-30")
 
-    # audit fields
-    created_by = models.IntegerField(default=101)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.IntegerField(default=101, db_column="created_by", help_text="User id, e.g. 101")
+    created_at = models.DateTimeField(auto_now_add=True, db_column="created_at", help_text="Created timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_column="updated_at", help_text="Updated timestamp")
 
     class Meta:
-        db_table = "account"
+        db_table = "px_acct_hdr"
         constraints = [
-            # Prevent duplicate account code under the same broker.py
-            models.UniqueConstraint(
-                fields=["broker", "account_code_at_broker"],
-                name="uq_account_broker_code"
-            )
+            models.UniqueConstraint(fields=["broker", "acct_cd"], name="uq_acct_broker_cd"),
         ]
         indexes = [
-            models.Index(fields=["investor", "status"]),
-            models.Index(fields=["broker"]),
+            models.Index(fields=["investor", "sts_cd"], name="ix_acct_inv_sts"),
+            models.Index(fields=["broker"], name="ix_acct_broker"),
         ]
 
     def __str__(self):
-        b = getattr(self.broker, "broker_code", "BROKER")
-        return f"{b}:{self.account_code_at_broker}"
-
-##===========END OF ACCOUNT MODEL ===========##
+        return self.acct_cd

@@ -7,7 +7,7 @@ from .common import IborTimeStampedModel, IborState
 
 class IborCashEventType(models.TextChoices):
     """
-    Generic cash event types.
+    Generic cash event type.
     """
     TRADE_SETTLE = "TRADE_SETTLE", "Trade settlement"
     TRADE_FEE = "TRADE_FEE", "Trade fee/charges"
@@ -29,9 +29,11 @@ class IborCashEvent(IborTimeStampedModel):
       +amount = cash inflow/credit
       -amount = cash outflow/debit
 
-    Ladder rules
-    ------------
-    - effective_dt is the date the cash movement impacts availability (often settle_dt).
+    Cash events come from:
+    _____________________________
+    - Deposits/withdrawals
+    - Trade settlement net cash (and optionally fee legs)
+
     """
 
     portfolio = models.ForeignKey(
@@ -75,7 +77,7 @@ class IborCashEvent(IborTimeStampedModel):
         max_length=200,
         blank=True,
         default="",
-        help_text="Free text description (broker label, reason, etc.).",
+        help_text="Free text description for trade (broker label, reason, etc.).",
     )
 
     # Lifecycle (optional)

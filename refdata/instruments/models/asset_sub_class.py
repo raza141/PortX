@@ -38,10 +38,12 @@ class AssetSubClass(TimeStampedModel):
 
     # Stable code. Once in production, treat as immutable.
     # Examples: EQ_COMMON, FI_GOVT, ETF_EQUITY
-    sub_asset_class_code = models.CharField(max_length=32, unique=True, db_index=True)
+    sub_asset_class_code = models.CharField(max_length=32, unique=True, db_index=True,
+                                            help_text="Sub Asset Class Code e.g. EQ_COMMON")
 
     # Human readable description shown in dropdowns/admin.
-    sub_asset_class_description = models.CharField(max_length=255)
+    sub_asset_class_description = models.CharField(max_length=255,
+                                                   help_text="Sub Asset Class Description")
 
     # FK to AssetClass (DB should store integer id).
     asset_class = models.ForeignKey(
@@ -49,13 +51,15 @@ class AssetSubClass(TimeStampedModel):
         on_delete=models.PROTECT,  # protect reference data (institution standard)
         related_name="sub_classes",
         db_index=True,
+        help_text="Asset Code(FK) from asset table"
     )
 
     # Determines which terms table / processing logic applies later.
     terms_family = models.CharField(max_length=16, choices=TermsFamily.choices)
 
     # Allows fractional quantity (ETFs, funds, FX, crypto, sometimes bonds via platforms).
-    supports_fractional = models.BooleanField(default=False)
+    supports_fractional = models.BooleanField(default=False,
+                                              help_text="Supports Fractional trading like in decimals like ETH")
 
     # Cashflow / income nature (helps reporting and later corporate-actions logic).
     income_type = models.CharField(max_length=16, choices=IncomeType.choices, default=IncomeType.NONE)
@@ -71,7 +75,8 @@ class AssetSubClass(TimeStampedModel):
     is_active = models.BooleanField(default=True, db_index=True)
 
     # Ordering within an asset class dropdown (institution UI convention)
-    sort_order = models.PositiveSmallIntegerField(default=0)
+    sort_order = models.PositiveSmallIntegerField(default=0,
+                                                  help_text="UI convention")
 
     created_by = models.IntegerField(default=101)
 

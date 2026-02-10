@@ -15,16 +15,20 @@ class CurrencyPair(models.Model):
         db_column="base_currency_id",
         on_delete=models.PROTECT,
         related_name="pairs_as_base",
+        help_text="Base currency e.g. USD"
     )
     quote_currency = models.ForeignKey(
         Currency,
         db_column="quote_currency_id",
         on_delete=models.PROTECT,
         related_name="pairs_as_quote",
+        help_text="Quote currency e.g. Pkr"
     )
 
     # Optional convenience label (can be derived). Keep if you already have it.
-    code = models.TextField(null=True, blank=True)  # e.g., "AED/PKR"
+    code = models.TextField(null=True, blank=True,
+                            help_text="Currency code (e.g. USD/PKR)"
+                            )  # e.g., "AED/PKR"
 
     is_active = models.BooleanField(default=True)
 

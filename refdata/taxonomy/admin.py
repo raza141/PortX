@@ -9,6 +9,7 @@ admin.site.register(GicsEdition)
 admin.site.register(GicsSector)
 admin.site.register(GicsIndustryGroup)
 admin.site.register(GicsIndustry)
+admin.site.register(GicsSubIndustry)
 
 admin.site.register(LocalSector)
 admin.site.register(LocalSectorGicsMap)

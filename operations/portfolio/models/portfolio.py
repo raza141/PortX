@@ -1,8 +1,13 @@
 from django.db import models
+from django.utils import timezone
+from django.db.models import Q, F
 
 
 class Portfolio(models.Model):
-    # --- enums ---
+    """
+    px_port_hdr: investable book (reporting/performance unit)
+    """
+
     class Status(models.TextChoices):
         ACTIVE = "ACT", "Active"
         PENDING = "PND", "Pending Onboarding"
@@ -23,120 +28,88 @@ class Portfolio(models.Model):
         SMS = "SMS", "SMS"
         POST = "PST", "Post"
 
-    # --- keys / identifiers ---
-    portfolio_id = models.BigAutoField(primary_key=True, db_column="port_id")
-    portfolio_name = models.CharField(max_length=120, db_column="port_nm")
+    class PerfMethod(models.TextChoices):
+        TWRR = "TWRR", "Time-weighted return"
+        MWRR = "MWRR", "Money-weighted return"
 
-    # ✅ NEW: Portfolio belongs to Mandate (Investor implied by mandate)
+    port_id = models.BigAutoField(primary_key=True, db_column="port_id", help_text="Portfolio key, e.g. 7001")
+    port_cd = models.CharField(max_length=24, unique=True, db_index=True, db_column="port_cd",
+                               help_text="Portfolio code, e.g. PORT_0001"
+    )
+    port_nm = models.CharField(max_length=120, db_column="port_nm",
+                               help_text="Portfolio name, e.g. Balanced Book - Core"
+    )
+
     mandate = models.ForeignKey(
         "policies.Mandate",
         on_delete=models.PROTECT,
         related_name="portfolios",
         db_column="mand_id",
-        null=False,
-        blank=False,
+        help_text="Parent mandate, e.g. MAND_BAL_001",
     )
 
-    # Optional (V2): portfolio-level IPS override (keep NULL in V1)
-    ips_override = models.ForeignKey(
-        "policies.IPS",
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name="portfolio_overrides",
-        db_column="ips_ovr_id",
-    )
-
-    # base currency (reporting base; the book itself is multi-ccy later)
-    base_currency = models.ForeignKey(
+    base_ccy = models.ForeignKey(
         "masters.Currency",
         on_delete=models.PROTECT,
         related_name="portfolios",
-        null=True,
-        blank=True,
+        null=True, blank=True,
         db_column="base_ccy_id",
+        help_text="Reporting currency, e.g. USD",
     )
 
-    benchmark = models.ForeignKey(
+    bmk = models.ForeignKey(
         "masters.Benchmark",
-        null=True,
-        blank=True,
+        null=True, blank=True,
         on_delete=models.PROTECT,
         related_name="portfolios",
         db_column="bmk_id",
+        help_text="Portfolio benchmark, e.g. MSCI World",
     )
 
-    fee_schedule = models.ForeignKey(
+    fee_sched = models.ForeignKey(
         "masters.FeeSchedule",
-        null=True,
-        blank=True,
+        null=True, blank=True,
         on_delete=models.PROTECT,
         related_name="portfolios",
         db_column="fee_sched_id",
+        help_text="Fee schedule override, e.g. 1% mgmt",
     )
 
-    # rebalancing/reporting preferences (can later move to mandate-level defaults)
-    rebalancing_frequency = models.CharField(
-        max_length=1,
-        choices=Frequency.choices,
-        default=Frequency.MONTHLY,
-        db_column="rebal_freq_cd",
-    )
+    perf_mthd_cd = models.CharField(max_length=4, choices=PerfMethod.choices, default=PerfMethod.TWRR,
+                                    db_column="perf_mthd_cd", help_text="Perf method, e.g. TWRR")
 
-    reporting_frequency = models.CharField(
-        max_length=1,
-        choices=Frequency.choices,
-        default=Frequency.MONTHLY,
-        db_column="rpt_freq_cd",
-    )
+    rebal_freq_cd = models.CharField(max_length=1, choices=Frequency.choices, default=Frequency.MONTHLY,
+                                     db_column="rebal_freq_cd", help_text="Rebal freq, e.g. M")
+    rpt_freq_cd = models.CharField(max_length=1, choices=Frequency.choices, default=Frequency.MONTHLY,
+                                   db_column="rpt_freq_cd", help_text="Report freq, e.g. Q")
+    rpt_dlvr_cd = models.CharField(max_length=3, choices=Delivery.choices, default=Delivery.EMAIL_PDF,
+                                   db_column="rpt_dlvr_cd", help_text="Delivery, e.g. EML")
 
-    reporting_delivery = models.CharField(
-        max_length=3,
-        choices=Delivery.choices,
-        default=Delivery.EMAIL_PDF,
-        db_column="rpt_dlvr_cd",
-    )
+    trd_enbl_flg = models.BooleanField(default=False, db_column="trd_enbl_flg", help_text="Trading enabled, e.g. True")
 
-    trading_enabled = models.BooleanField(default=False, db_column="trd_enbl_flg")
+    sts_cd = models.CharField(max_length=3, choices=Status.choices, default=Status.PENDING,
+                              db_column="sts_cd", help_text="Status, e.g. PND")
 
-    status = models.CharField(
-        max_length=3,
-        choices=Status.choices,
-        default=Status.PENDING,
-        db_column="sts_cd",
-    )
+    incp_dt = models.DateField(null=True, blank=True, db_column="incp_dt",
+                               help_text="Portfolio inception, e.g. 2026-02-15")
+    cls_dt = models.DateField(null=True, blank=True, db_column="cls_dt",
+                              help_text="Portfolio close date, e.g. 2028-12-31")
+    nxt_rvw_due_dt = models.DateField(null=True, blank=True, db_column="nxt_rvw_due_dt",
+                                      help_text="Next review due date, e.g. 2026-05-31")
 
-    inception_date = models.DateField(null=True, blank=True, db_column="incp_dt")
-    next_review_due = models.DateField(null=True, blank=True, db_column="nxt_rvw_due_dt")
-
-    # optional convenience only (real linkage is via PortfolioAccountMap later)
-    primary_account = models.ForeignKey(
-        "portfolio.Account",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="primary_for_portfolios",
-        db_column="prim_acct_id",
-    )
-
-    # audit
-    created_by = models.IntegerField(default=101, db_column="crt_by")
-    created_at = models.DateTimeField(auto_now_add=True, db_column="crt_ts")
-    updated_at = models.DateTimeField(auto_now=True, db_column="upd_ts")
+    created_by = models.IntegerField(default=101, db_column="created_by", help_text="User id, e.g. 101")
+    created_at = models.DateTimeField(auto_now_add=True, db_column="created_at", help_text="Created timestamp")
+    updated_at = models.DateTimeField(auto_now=True, db_column="updated_at", help_text="Updated timestamp")
 
     class Meta:
         db_table = "px_port_hdr"
         indexes = [
-            models.Index(fields=["mandate", "status"], name="ix_port_mand_sts"),
-            models.Index(fields=["status"], name="ix_port_sts"),
+            models.Index(fields=["mandate", "sts_cd"], name="ix_port_mand_sts"),
+            models.Index(fields=["sts_cd"], name="ix_port_sts"),
         ]
         constraints = [
-            # unique portfolio name per mandate (investor implied)
-            models.UniqueConstraint(
-                fields=["mandate", "portfolio_name"],
-                name="uq_port_mand_nm",
-            )
+            models.UniqueConstraint(fields=["mandate", "port_nm"], name="uq_port_mand_nm"),
         ]
 
     def __str__(self):
-        return self.portfolio_name
+        return f"{self.port_nm} ({self.port_cd})"

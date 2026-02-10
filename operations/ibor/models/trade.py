@@ -15,7 +15,7 @@ class IborTradeEvent(IborTimeStampedModel):
 
     This is the core 'TRD_EVT' for IBOR.
     - Created from manual entry OR from approved staged trades.
-    - Must support versioning/corrections without deleting history.
+    - it support versioning/corrections without deleting history.
     - State-driven truth levels (EXEC/CONF/SETTLED).
     """
 
@@ -49,6 +49,13 @@ class IborTradeEvent(IborTimeStampedModel):
         on_delete=models.PROTECT,
         related_name="ibor_trades",
         help_text="Portfolio owning the position (multi-base supported via portfolio.base_ccy).",
+    )
+    account = models.ForeignKey(
+        "portfolio.Account",
+        on_delete=models.PROTECT,
+        related_name="ibor_trades_ac",
+        help_text="Account id where the trade initiate"
+
     )
     broker = models.ForeignKey(
         "masters.Broker",
@@ -191,8 +198,7 @@ class IborChargeType(models.TextChoices):
 
 class IborChargeComponent(IborTimeStampedModel):
     """
-    Charge component for a trade (flexible list).
-
+    This model will let us record the flexible breakdown of commissions/taxes/fees per trade
     Examples
     --------
     - PSX Laga, SECP Laga, NCCPL, CDC, Adv Tax, SST
@@ -230,9 +236,13 @@ class IborChargeComponent(IborTimeStampedModel):
         decimal_places=10,
         help_text="Charge amount (positive number).",
     )
-    currency = models.CharField(
+
+    cost_ccy = models.ForeignKey(
+        "masters.Currency",
+        on_delete=models.SET_NULL,
+        null=True,
         max_length=3,
-        help_text="Charge currency ISO3.",
+        help_text="Charge currency ISO3 .",
     )
     is_withholding = models.BooleanField(
         default=False,
@@ -247,7 +257,7 @@ class IborChargeComponent(IborTimeStampedModel):
         ]
 
     def __str__(self) -> str:
-        return f"{self.trade_id}:{self.charge_type_cd}:{self.amount} {self.currency}"
+        return f"{self.trade_id}:{self.charge_type_cd}:{self.amount} - {self.cost_ccy}"
 
 
 class IborTradeStateHistory(IborTimeStampedModel):

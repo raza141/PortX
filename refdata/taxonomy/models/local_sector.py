@@ -1,3 +1,5 @@
+#refdata.taxonomy.models.loca_sector.py
+
 from django.db import models
 from .base import AuditModel
 from .gics import GicsEdition, GicsSubIndustry
@@ -15,8 +17,12 @@ class LocalSector(AuditModel):
         related_name="local_sectors"
     )
 
-    local_code = models.CharField(max_length=20)  # e.g., "820"
-    name = models.CharField(max_length=200)       # e.g., "OIL & GAS EXPLORATION COMPANIES"
+    local_code = models.CharField(max_length=20,
+                                  help_text="Sector Code e.g. 820"
+                                  )
+    name = models.CharField(max_length=200,
+                            help_text="Local Sector Name e.g.,OIL & GAS EXPLORATION COMPANIES"
+                            )       #
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -39,13 +45,28 @@ class LocalSectorGicsMap(AuditModel):
     Mapping: local sector -> GICS subindustry (edition-aware).
     This is the 'intersection' table you mentioned.
     """
-    edition = models.ForeignKey(GicsEdition, on_delete=models.PROTECT, related_name="local_sector_maps")
-    local_sector = models.ForeignKey(LocalSector, on_delete=models.PROTECT, related_name="gics_maps")
-    gics_subindustry = models.ForeignKey(GicsSubIndustry, on_delete=models.PROTECT, related_name="local_maps")
+    edition = models.ForeignKey(
+        GicsEdition, on_delete=models.PROTECT,
+        related_name="local_sector_maps"
+    )
+    local_sector = models.ForeignKey(
+        LocalSector, on_delete=models.PROTECT,
+        related_name="gics_maps"
+    )
+    gics_subindustry = models.ForeignKey(
+        GicsSubIndustry, on_delete=models.PROTECT,
+        related_name="local_maps",
+        help_text="GICS subindustry (edition-aware)."
+    )
 
     # quality + governance fields (very institutional)
-    source = models.CharField(max_length=50, default="manual")  # manual/vendor/import
-    confidence = models.DecimalField(max_digits=5, decimal_places=2, default=100.00)
+    source = models.CharField(max_length=50, default="manual",
+                              help_text="Source of mapping data manual, vendor or import"
+    )
+    confidence = models.DecimalField(max_digits=5, decimal_places=2,
+                             default=100.00,
+                             help_text="Confidence of mapping data manual, vendor or import"
+    )
 
     effective_from = models.DateField(null=True, blank=True)
     effective_to = models.DateField(null=True, blank=True)

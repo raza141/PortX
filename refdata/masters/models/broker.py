@@ -11,13 +11,17 @@ class Broker(models.Model):
         CUSTODIAN = "CUS", "Custodian"
         PLATFORM = "PLT", "Platform"
         BANK = "BNK", "Bank"
+        EXCHANGE = "EX", "Exchange"
 
     class Status(models.TextChoices):
         ACTIVE = "ACT", "Active"
         INACTIVE = "INA", "Inactive"
 
-    broker_code = models.CharField(max_length=30, unique=True)  # e.g. SCS, SARWA, BMA
-    broker_name = models.CharField(max_length=200)
+    broker_code = models.CharField(max_length=30, unique=True,
+                                   help_text="Broker Code e.g. SCS")  # e.g. SCS, SARWA, BMA
+    broker_name = models.CharField(max_length=200,
+                                   help_text="Broker Full name"
+                                   )
     broker_type = models.CharField(max_length=3, choices=BrokerType.choices, default=BrokerType.BROKER)
 
     # Leave country as integer for now (later FK to Country model)
@@ -25,12 +29,28 @@ class Broker(models.Model):
                                    null=True, blank=True, on_delete=models.SET_NULL, related_name="brokers"
                                    )
 
-    default_base_currency = models.CharField(max_length=3, default="USD")
-    email = models.EmailField(null=True, blank=True)
-    phone = models.CharField(max_length=40, null=True, blank=True)
-    regulator = models.CharField(max_length=80, null=True, blank=True)
+    default_base_currency = models.ForeignKey(
+        "masters.Currency",
+        related_name="default_base_currency",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Optional default currency for all currencies."
+    )
+
+    email = models.EmailField(null=True, blank=True,
+                              help_text="Optional email address for this broker."
+                              )
+    phone = models.CharField(max_length=40, null=True, blank=True,
+                             help_text="Optional phone number for this broker."
+                             )
+    regulator = models.CharField(max_length=80, null=True, blank=True,
+                                 help_text="Optional regulator for this broker."
+                                 )
     website = models.URLField(null=True, blank=True)
-    notes = models.TextField(null=True, blank=True)
+    notes = models.TextField(null=True, blank=True,
+                             help_text="Optional notes for this broker."
+                             )
 
     status = models.CharField(max_length=3, choices=Status.choices, default=Status.ACTIVE)
 

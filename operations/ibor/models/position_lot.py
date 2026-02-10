@@ -55,7 +55,7 @@ class PositionLot(models.Model):
     )
 
     src_trd = models.ForeignKey(
-        "ibor.IborTrade",
+        "ibor.IborTradeEvent",
         on_delete=models.PROTECT,
         related_name="opened_lots",
         db_column="src_trd_id",

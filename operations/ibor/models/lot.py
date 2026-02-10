@@ -12,7 +12,6 @@ class IborTaxLot(IborTimeStampedModel):
     Creation rule (engine, not model):
     - Create lot when BUY trade reaches CONF (or EXEC if you prefer faster, but CONF is safer).
     - Allocate charges into cost basis according to your policy (per-trade).
-
     This model stores the resulting lot inventory.
     """
 
@@ -78,8 +77,11 @@ class IborTaxLot(IborTimeStampedModel):
 
 class IborLotConsumption(IborTimeStampedModel):
     """
+    ___________________________________________________
+    This model audit trail of which sell consumed which buy lot.
+    This is the key table for FIFO explainability and future CGT statements.
+    ___________________________________________________
     Lot consumption record (FIFO).
-
     - Created when a SELL trade is processed by the FIFO engine.
     - One SELL trade may create multiple consumption rows (consuming multiple lots).
     """

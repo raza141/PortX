@@ -1,7 +1,7 @@
 from governance.policies.models.mandate import Mandate
-from governance.policies.models.ips import IPS
+from governance.policies.models.ips import IPSVersion
 
 __all__ = ["Mandate",
-           "IPS",
+           "IPSVersion",
 
 ]
