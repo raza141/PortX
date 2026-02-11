@@ -119,6 +119,21 @@ class IborLotConsumption(IborTimeStampedModel):
         decimal_places=10,
         help_text="Total cost basis consumed = consumed_qty * unit_cost.",
     )
+    proceeds_amt = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        null=True,
+        blank=True,
+        help_text="Allocated net proceeds for this consumed slice (in cost_ccy).",
+    )
+
+    rlzd_pnl_amt = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        null=True,
+        blank=True,
+        help_text="Realized PnL = proceeds_amt - cost_basis (in cost_ccy).",
+    )
 
     class Meta:
         db_table = "ibor_lot_cns"

@@ -18,6 +18,11 @@ class IborTradeEvent(IborTimeStampedModel):
     - it support versioning/corrections without deleting history.
     - State-driven truth levels (EXEC/CONF/SETTLED).
     """
+    class IborBookStatus(models.TextChoices):
+        NEW = "NEW", "New"
+        BOOKED = "BOK", "Booked"
+        ERROR = "ERR", "Error"
+        REVERSED = "REV", "Reversed"
 
     # Lineage & versioning
     # where the trade come from
@@ -161,6 +166,26 @@ class IborTradeEvent(IborTimeStampedModel):
         blank=True,
         help_text="Timestamp when current state was achieved (optional).",
     )
+    book_sts_cd = models.CharField(
+        max_length=3,
+        choices=IborBookStatus.choices,
+        default=IborBookStatus.NEW,
+        db_index=True,
+        help_text="Booking status: NEW/BOK/ERR/REV.",
+    )
+
+    book_ts = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When booking was completed (set by booking engine).",
+    )
+
+    book_err_txt = models.CharField(
+        max_length=400,
+        blank=True,
+        default="",
+        help_text="Booking error message if book_sts_cd=ERR.",
+    )
 
     memo = models.TextField(
         blank=True,
@@ -252,6 +277,7 @@ class IborChargeComponent(IborTimeStampedModel):
         default=False,
         help_text="True if this is withholding tax (useful later for dividends/corporate actions).",
     )
+
 
     class Meta:
         db_table = "ibor_chg_cmp"
