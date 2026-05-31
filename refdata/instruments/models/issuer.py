@@ -10,7 +10,7 @@ class Issuer(TimeStampedModel):
     Issuer = legal entity that issues an instrument (equity, bond, fund, etc.).
     Used later for:
     - corporate actions (dividends/coupons/splits)
-    - issuer-level reporting (sector/country.py exposure)
+    - issuer-level rep (sector/country.py exposure)
     - risk aggregation (issuer concentration)
     """
 

@@ -12,7 +12,7 @@ class AssetSubClass(TimeStampedModel):
     - Controls behavior flags (coupon/maturity/underlying)
     - Determines which "terms table" applies later (Phase II):
         * EQUITY terms, FI terms, FUND terms, DERIV terms, etc.
-    - Drives validation and reporting buckets.
+    - Drives validation and rep buckets.
     """
 
     class TermsFamily(models.TextChoices):
@@ -61,7 +61,7 @@ class AssetSubClass(TimeStampedModel):
     supports_fractional = models.BooleanField(default=False,
                                               help_text="Supports Fractional trading like in decimals like ETH")
 
-    # Cashflow / income nature (helps reporting and later corporate-actions logic).
+    # Cashflow / income nature (helps rep and later corporate-actions logic).
     income_type = models.CharField(max_length=16, choices=IncomeType.choices, default=IncomeType.NONE)
 
     # Behavior flags used for validation + future valuation logic.

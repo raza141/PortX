@@ -73,7 +73,7 @@ class SecurityListing(TimeStampedModel):
     is_primary = models.BooleanField(
         default=False,
         db_index=True,
-        help_text="Primary listing used by default for UI/reporting (one per security ideally).",
+        help_text="Primary listing used by default for UI/rep (one per security ideally).",
     )
 
     venue_type = models.CharField(max_length=16, choices=VenueType.choices, default=VenueType.EXCHANGE)

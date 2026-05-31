@@ -5,7 +5,7 @@ from django.db.models import Q, F
 
 class Portfolio(models.Model):
     """
-    px_port_hdr: investable book (reporting/performance unit)
+    px_port_hdr: investable book (rep/performance unit)
     """
 
     class Status(models.TextChoices):

@@ -7,7 +7,7 @@ from refdata.instruments.models.base import TimeStampedModel
 class AssetClass(TimeStampedModel):
     """
     Reference table: high-level asset class bucket used for:
-    - IPS/asset allocation reporting
+    - IPS/asset allocation rep
     - high-level exposure summaries
     - validation rules (e.g., allowed instruments)
     """

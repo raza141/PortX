@@ -20,7 +20,7 @@ class SecurityMaster(TimeStampedModel):
     This table is the backbone for:
     - transactions / holdings linkage
     - classification (asset sub-class, terms family)
-    - issuer concentration reporting
+    - issuer concentration rep
     """
 
     class Status(models.TextChoices):
@@ -85,7 +85,7 @@ class SecurityMaster(TimeStampedModel):
         "masters.Currency",
         on_delete=models.PROTECT,
         related_name="base_currency_securities",
-        help_text="Economic/base currency (used for reporting/valuation conventions).",
+        help_text="Economic/base currency (used for rep/valuation conventions).",
     )
 
     # Convenience pointer for UI. Not required for correctness.

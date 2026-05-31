@@ -38,14 +38,18 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Governance
     "governance.crm.apps.CrmConfig",
+    "governance.policies.apps.PoliciesConfig",
+    # Ref Data
     "refdata.masters.apps.MastersConfig",
     "refdata.taxonomy.apps.TaxonomyConfig",
     "refdata.instruments.apps.InstrumentsConfig",
+    # Operation
     "operations.portfolio.apps.PortfolioConfig",
-    "governance.policies.apps.PoliciesConfig",
     "operations.ibor.apps.IborConfig", # this will route to ibor app, from there it will go operation.ibor
-
+    # Reporting
+    "reporting.monthly.apps.MonthlyConfig",
 
 
 ]
