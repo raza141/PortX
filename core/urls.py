@@ -17,9 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from operations import ibor
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     # path("crm/", include("crm.urls")),
+    path("ibor/", include("operations.ibor.urls", namespace="ibor")),
 ]
 
