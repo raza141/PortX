@@ -6,6 +6,13 @@ from operations.ibor.models.trade import IborTradeEvent, IborSide
 
 
 class IborTradeForm(forms.ModelForm):
+    side = forms.ChoiceField(
+        choices=IborSide.choices,
+        widget=forms.Select(attrs={"class": "form-input"}),
+        required=True,
+        label="Action",
+    )
+
     action = forms.ChoiceField(
         choices=[
             ("save", "Save only"),
@@ -22,7 +29,7 @@ class IborTradeForm(forms.ModelForm):
         max_digits=20,
         initial=Decimal("1"),
         label="FX rate",
-        help_text="Optional manual FX rate for reference. Not yet posted into booking engine.",
+        help_text="Optional manual FX rate for reference.",
     )
 
     class Meta:
@@ -47,9 +54,22 @@ class IborTradeForm(forms.ModelForm):
             "memo",
         ]
         widgets = {
+            "source_system": forms.TextInput(attrs={"class": "form-input"}),
+            "external_ref": forms.TextInput(attrs={"class": "form-input"}),
+            "portfolio": forms.Select(attrs={"class": "form-input"}),
+            "account": forms.Select(attrs={"class": "form-input"}),
+            "broker": forms.Select(attrs={"class": "form-input"}),
+            "exec_venue": forms.Select(attrs={"class": "form-input"}),
+            "instrument": forms.Select(attrs={"class": "form-input"}),
+            "quantity": forms.NumberInput(attrs={"class": "form-input", "step": "0.0001"}),
+            "price": forms.NumberInput(attrs={"class": "form-input", "step": "0.0001"}),
+            "trade_ccy": forms.Select(attrs={"class": "form-input"}),
+            "settle_ccy": forms.Select(attrs={"class": "form-input"}),
             "trade_dt": forms.DateInput(attrs={"type": "date", "class": "form-input"}),
             "settle_dt": forms.DateInput(attrs={"type": "date", "class": "form-input"}),
-            "memo": forms.Textarea(attrs={"rows": 3, "class": "form-input", "placeholder": "Optional notes / thesis..."})
+            "gross_amount": forms.NumberInput(attrs={"class": "form-input", "readonly": "readonly"}),
+            "net_amount": forms.NumberInput(attrs={"class": "form-input", "readonly": "readonly"}),
+            "memo": forms.Textarea(attrs={"rows": 3, "class": "form-input", "placeholder": "Optional notes / thesis..."}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -64,16 +84,6 @@ class IborTradeForm(forms.ModelForm):
         self.fields["net_amount"].required = False
         self.fields["memo"].required = False
 
-        for name, field in self.fields.items():
-            if name not in {"trade_dt", "settle_dt", "memo", "action"}:
-                existing = field.widget.attrs.get("class", "")
-                field.widget.attrs["class"] = f"{existing} form-input".strip()
-
-        self.fields["gross_amount"].widget.attrs.update({"readonly": "readonly"})
-        self.fields["net_amount"].widget.attrs.update({"readonly": "readonly"})
-
-        self.fields["side"].widget = forms.Select(attrs={"class": "form-input"})
-
     def clean(self):
         cleaned_data = super().clean()
 
@@ -84,7 +94,6 @@ class IborTradeForm(forms.ModelForm):
         settle_ccy = cleaned_data.get("settle_ccy")
         trade_dt = cleaned_data.get("trade_dt")
         settle_dt = cleaned_data.get("settle_dt")
-        net_amount = cleaned_data.get("net_amount")
 
         if side not in {IborSide.BUY, IborSide.SELL}:
             self.add_error("side", "Side must be BUY or SELL.")
@@ -100,9 +109,6 @@ class IborTradeForm(forms.ModelForm):
 
         if quantity and price:
             cleaned_data["gross_amount"] = quantity * price
-
-        if cleaned_data.get("gross_amount") and not net_amount:
-            cleaned_data["net_amount"] = cleaned_data["gross_amount"]
 
         if trade_ccy and not settle_ccy:
             cleaned_data["settle_ccy"] = trade_ccy

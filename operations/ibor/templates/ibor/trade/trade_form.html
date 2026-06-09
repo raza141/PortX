@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- ===== Document Meta ===== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IBOR Trade Entry</title>
+
+    <!-- ===== Page Styles ===== -->
     <style>
         :root {
             --bg: #f5f7fb;
@@ -20,6 +23,7 @@
         }
 
         * { box-sizing: border-box; }
+
         body {
             margin: 0;
             background: var(--bg);
@@ -34,6 +38,7 @@
         }
 
         .page-header { margin-bottom: 18px; }
+
         .eyebrow {
             font-size: 12px;
             letter-spacing: 0.08em;
@@ -42,11 +47,13 @@
             font-weight: 700;
             margin-bottom: 8px;
         }
+
         h1 {
             margin: 0 0 8px;
             font-size: 32px;
             line-height: 1.15;
         }
+
         .subtext {
             color: var(--muted);
             max-width: 72ch;
@@ -69,27 +76,23 @@
             overflow: hidden;
         }
 
-        .card-header {
-            padding: 18px 20px 8px;
-        }
-        .card-title {
-            margin: 0;
-            font-size: 18px;
-        }
+        .card-header { padding: 18px 20px 8px; }
+        .card-title { margin: 0; font-size: 18px; }
+
         .card-subtitle {
             margin-top: 6px;
             color: var(--muted);
             font-size: 14px;
         }
-        .card-body {
-            padding: 18px 20px 22px;
-        }
+
+        .card-body { padding: 18px 20px 22px; }
 
         .messages {
             margin-bottom: 16px;
             display: grid;
             gap: 10px;
         }
+
         .message {
             background: #ecfdf5;
             border: 1px solid #a7f3d0;
@@ -97,6 +100,7 @@
             padding: 12px 14px;
             border-radius: 10px;
         }
+
         .error-banner {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -117,6 +121,7 @@
             flex-direction: column;
             gap: 6px;
         }
+
         .field.full {
             grid-column: 1 / -1;
         }
@@ -152,10 +157,6 @@
         .hint {
             font-size: 12px;
             color: var(--muted);
-        }
-
-        .readonly-box {
-            background: #f8fafc;
         }
 
         .actions {
@@ -200,14 +201,8 @@
             font-size: 14px;
         }
 
-        .summary-label {
-            color: var(--muted);
-        }
-
-        .summary-value {
-            font-weight: 700;
-            text-align: right;
-        }
+        .summary-label { color: var(--muted); }
+        .summary-value { font-weight: 700; text-align: right; }
 
         .preview-box {
             padding: 14px;
@@ -216,33 +211,6 @@
             border: 1px solid var(--border);
             font-size: 14px;
             color: #334155;
-        }
-
-        .charge-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .charge-table th,
-        .charge-table td {
-            border-bottom: 1px solid #e5e7eb;
-            vertical-align: top;
-            padding: 10px 8px;
-            text-align: left;
-        }
-
-        .charge-table th {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: var(--muted);
-            letter-spacing: 0.04em;
-        }
-
-        .charge-delete {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 44px;
         }
 
         .section-divider {
@@ -261,38 +229,15 @@
             .form-grid {
                 grid-template-columns: 1fr;
             }
-
-            .charge-table,
-            .charge-table thead,
-            .charge-table tbody,
-            .charge-table tr,
-            .charge-table td,
-            .charge-table th {
-                display: block;
-                width: 100%;
-            }
-
-            .charge-table thead {
-                display: none;
-            }
-
-            .charge-table tr {
-                border: 1px solid var(--border);
-                border-radius: 12px;
-                margin-bottom: 12px;
-                padding: 10px;
-                background: #fafcff;
-            }
-
-            .charge-table td {
-                border: none;
-                padding: 8px 0;
-            }
         }
     </style>
 </head>
 <body>
+
+<!-- ===== Page Container ===== -->
 <div class="page">
+
+    <!-- ===== Header Section ===== -->
     <div class="page-header">
         <div class="eyebrow">PortX · Operations · IBOR</div>
         <h1>Trade Entry</h1>
@@ -301,6 +246,7 @@
         </div>
     </div>
 
+    <!-- ===== Django Messages ===== -->
     {% if messages %}
         <div class="messages">
             {% for message in messages %}
@@ -309,6 +255,7 @@
         </div>
     {% endif %}
 
+    <!-- ===== Non-field Errors ===== -->
     {% if form.non_field_errors or charge_formset.non_form_errors %}
         <div class="error-banner">
             {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
@@ -316,13 +263,19 @@
         </div>
     {% endif %}
 
+    <!-- ===== Main Form ===== -->
     <form method="post" id="trade-form">
         {% csrf_token %}
         {{ form.action }}
         {{ charge_formset.management_form }}
 
+        <!-- ===== Two-column Layout ===== -->
         <div class="layout">
+
+            <!-- ===== Left Main Column ===== -->
             <div class="stack">
+
+                <!-- ===== Trade Context Card ===== -->
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">Trade context</h2>
@@ -364,6 +317,7 @@
                     </div>
                 </section>
 
+                <!-- ===== Economics Card ===== -->
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">Economics</h2>
@@ -449,73 +403,72 @@
                     </div>
                 </section>
 
+                <!-- ===== Charges Card ===== -->
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">Charges</h2>
                         <div class="card-subtitle">Commission, levy, VAT/SST, CDC, tax, and other trade-linked charges.</div>
                     </div>
                     <div class="card-body">
-                        <table class="charge-table">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                    <th>Rate</th>
-                                    <th>Amount</th>
-                                    <th>Currency</th>
-                                    <th>WHT?</th>
-                                    <th>Delete</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for cform in charge_formset %}
-                                    <tr class="charge-row">
-                                        {% for hidden in cform.hidden_fields %}{{ hidden }}{% endfor %}
-                                        <td>
+                        {% for cform in charge_formset %}
+                            <div class="card" style="margin-bottom: 14px; box-shadow:none;">
+                                <div class="card-body">
+                                    {% for hidden in cform.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <div class="form-grid">
+                                        <div class="field">
+                                            <label>{{ cform.charge_type_cd.label }}</label>
                                             {{ cform.charge_type_cd }}
                                             {% for error in cform.charge_type_cd.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </td>
-                                        <td>
+                                        </div>
+                                        <div class="field">
+                                            <label>{{ cform.description.label }}</label>
                                             {{ cform.description }}
                                             {% for error in cform.description.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </td>
-                                        <td>
+                                        </div>
+                                        <div class="field">
+                                            <label>{{ cform.rate.label }}</label>
                                             {{ cform.rate }}
                                             {% for error in cform.rate.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </td>
-                                        <td>
+                                        </div>
+                                        <div class="field">
+                                            <label>{{ cform.amount.label }}</label>
                                             {{ cform.amount }}
                                             {% for error in cform.amount.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </td>
-                                        <td>
+                                        </div>
+                                        <div class="field">
+                                            <label>{{ cform.cost_ccy.label }}</label>
                                             {{ cform.cost_ccy }}
                                             {% for error in cform.cost_ccy.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </td>
-                                        <td>
-                                            {{ cform.is_withholding }}
+                                        </div>
+                                        <div class="field">
+                                            <label>{{ cform.is_withholding.label }}</label>
+                                            <div style="padding-top:10px;">{{ cform.is_withholding }}</div>
                                             {% for error in cform.is_withholding.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </td>
-                                        <td class="charge-delete">
-                                            {% if cform.DELETE %}{{ cform.DELETE }}{% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                        </div>
+                                        {% if cform.DELETE %}
+                                            <div class="field">
+                                                <label>Delete</label>
+                                                <div style="padding-top:10px;">{{ cform.DELETE }}</div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
 
                         <div class="actions">
-                            <button type="submit" name="submit_action" value="save" class="btn btn-secondary">
-                                Save only
-                            </button>
-                            <button type="submit" name="submit_action" value="book" class="btn btn-primary">
-                                Save &amp; Book
-                            </button>
+                            <button type="submit" name="submit_action" value="save" class="btn btn-secondary">Save only</button>
+                            <button type="submit" name="submit_action" value="book" class="btn btn-primary">Save &amp; Book</button>
                         </div>
                     </div>
                 </section>
+
             </div>
 
+            <!-- ===== Right Sidebar Column ===== -->
             <aside class="stack">
+
+                <!-- ===== Live Preview Card ===== -->
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">Preview</h2>
@@ -553,6 +506,7 @@
                     </div>
                 </section>
 
+                <!-- ===== Charge Mapping Help Card ===== -->
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">Charge mapping</h2>
@@ -563,11 +517,14 @@
                         </div>
                     </div>
                 </section>
+
             </aside>
+
         </div>
     </form>
 </div>
 
+<!-- ===== Page Script ===== -->
 <script>
     (function () {
         const quantityInput = document.getElementById("id_quantity");
@@ -671,3 +628,6 @@
 </script>
 </body>
 </html>
+
+
+</query>

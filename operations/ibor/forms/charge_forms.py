@@ -16,25 +16,25 @@ class IborChargeComponentForm(forms.ModelForm):
             "is_withholding",
         ]
         widgets = {
-            "description": forms.TextInput(attrs={"class": "form-input", "placeholder": "e.g. Broker commission, SST, CDC"}),
-            "rate": forms.NumberInput(attrs={"class": "form-input", "step": "0.0001", "placeholder": "Optional"}),
-            "amount": forms.NumberInput(attrs={"class": "form-input charge-amount", "step": "0.0001", "placeholder": "0.00"}),
+            "charge_type_cd": forms.Select(attrs={"class": "form-input"}),
+            "description": forms.TextInput(
+                attrs={"class": "form-input", "placeholder": "e.g. Broker commission, SST, CDC"}
+            ),
+            "rate": forms.NumberInput(
+                attrs={"class": "form-input", "step": "0.0001", "placeholder": "Optional"}
+            ),
+            "amount": forms.NumberInput(
+                attrs={"class": "form-input charge-amount", "step": "0.0001", "placeholder": "0.00"}
+            ),
+            "cost_ccy": forms.Select(attrs={"class": "form-input"}),
             "is_withholding": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        for name, field in self.fields.items():
-            if name not in {"description", "rate", "amount", "is_withholding"}:
-                existing = field.widget.attrs.get("class", "")
-                field.widget.attrs["class"] = f"{existing} form-input".strip()
-
 
 IborChargeFormSet = inlineformset_factory(
-    IborTradeEvent,
-    IborChargeComponent,
+    parent_model=IborTradeEvent,
+    model=IborChargeComponent,
     form=IborChargeComponentForm,
-    extra=2,
+    extra=3,
     can_delete=True,
 )
