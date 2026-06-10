@@ -5,6 +5,12 @@ from .trade import IborTradeEvent, IborChargeComponent, IborTradeStateHistory
 from .cash_ledger import IborCashEvent
 from .market import IborPriceSnapshot, IborFxOverride
 from .lot import IborTaxLot, IborLotConsumption
+from .fee import (
+    IborFeeApplyOn,
+    IborFeeCalcMethod,
+    IborFeeRule,
+    IborFeeSchedule,
+)
 
 __all__ = [
     "IborSourceDoc",
@@ -18,4 +24,8 @@ __all__ = [
     "IborFxOverride",
     "IborTaxLot",
     "IborLotConsumption",
+    "IborFeeApplyOn",
+    "IborFeeCalcMethod",
+    "IborFeeRule",
+    "IborFeeSchedule",
 ]
