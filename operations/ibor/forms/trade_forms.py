@@ -75,7 +75,7 @@ class IborTradeEntryForm(BaseTradeForm):
             "asset_class",
             "asset_sub_class",
             "source_system",
-            "trader_name",
+            "trader",
             "order_type",
             "order_id",
             "execution_id",

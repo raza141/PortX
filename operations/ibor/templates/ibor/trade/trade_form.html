@@ -36,6 +36,7 @@
             <div class="field">
                 <label for="{{ form.source_system.id_for_label }}">Source system</l<label>
                 {{ form.source_system }}
+                <div class="hint"> Where the Record came .</div>
                 {% for e in form.source_system.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
@@ -47,11 +48,13 @@
             <div class="field">
                 <label for="{{ form.portfolio.id_for_label }}">Portfolio</l<label>
                 {{ form.portfolio }}
+                <div class="hint">Portfolio for trader allocation .</div>
                 {% for e in form.portfolio.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
                 <label for="{{ form.account.id_for_label }}">Account</l<label>
                 {{ form.account }}
+                <div class="hint">Account for trader settlement .</div>
                 {% for e in form.account.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
@@ -65,9 +68,9 @@
                 {% for e in form.exec_venue.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <label for="{{ form.trader_name.id_for_label }}">Trader / entered by</l<label>
-                {{ form.trader_name }}
-                {% for e in form.trader_name.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+                <label for="{{ form.trader.id_for_label }}">Trader / entered by</l<label>
+                {{ form.trader }}
+                {% for e in form.trader.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
         </div>
     </div>

@@ -180,11 +180,13 @@ class IborTradeEvent(IborTimeStampedModel):
         default="",
         help_text="Execution/fill id from broker/OMS.",
     )
-    trader_name = models.CharField(
-        max_length=120,
+    trader = models.ForeignKey(
+        "crm.RM",
+        null=True,
         blank=True,
-        default="",
-        help_text="Trader or user who placed the order (optional).",
+        on_delete=models.SET_NULL,
+        related_name="ibor_trades",
+        help_text="RM / trader who placed this order.",
     )
 
     imported_flag = models.BooleanField(
