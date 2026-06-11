@@ -34,38 +34,38 @@
     <div class="card-body">
         <div class="form-grid">
             <div class="field">
-                abel for="{{ form.source_system.id_for_label }}">Source system</label>
+                <label for="{{ form.source_system.id_for_label }}">Source system</l<label>
                 {{ form.source_system }}
                 {% for e in form.source_system.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.external_ref.id_for_label }}">External reference</label>
+                <label for="{{ form.external_ref.id_for_label }}">External reference</l<label>
                 {{ form.external_ref }}
                 <div class="hint">Broker contract note / voucher number.</div>
                 {% for e in form.external_ref.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.portfolio.id_for_label }}">Portfolio</label>
+                <label for="{{ form.portfolio.id_for_label }}">Portfolio</l<label>
                 {{ form.portfolio }}
                 {% for e in form.portfolio.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.account.id_for_label }}">Account</label>
+                <label for="{{ form.account.id_for_label }}">Account</l<label>
                 {{ form.account }}
                 {% for e in form.account.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.broker.id_for_label }}">Broker</label>
+                <label for="{{ form.broker.id_for_label }}">Broker</l<label>
                 {{ form.broker }}
                 {% for e in form.broker.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.exec_venue.id_for_label }}">Exchange / venue</label>
+                <label for="{{ form.exec_venue.id_for_label }}">Exchange / venue</l<label>
                 {{ form.exec_venue }}
                 {% for e in form.exec_venue.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.trader_name.id_for_label }}">Trader / entered by</label>
+                <label for="{{ form.trader_name.id_for_label }}">Trader / entered by</l<label>
                 {{ form.trader_name }}
                 {% for e in form.trader_name.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
@@ -81,75 +81,75 @@
     <div class="card-body">
         <div class="form-grid">
             <div class="field full">
-                abel for="{{ form.instrument.id_for_label }}">Instrument</label>
+                <label for="{{ form.instrument.id_for_label }}">Instrument</l<label>
                 {{ form.instrument }}
                 {% for e in form.instrument.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.side.id_for_label }}">Side / action</label>
+                <label for="{{ form.side.id_for_label }}">Side / action</l<label>
                 {{ form.side }}
                 {% for e in form.side.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.order_type.id_for_label }}">Order type</label>
+                <label for="{{ form.order_type.id_for_label }}">Order type</l<label>
                 {{ form.order_type }}
                 {% for e in form.order_type.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.quantity.id_for_label }}">Quantity / volume</label>
+                <label for="{{ form.quantity.id_for_label }}">Quantity / volume</l<label>
                 {{ form.quantity }}
                 {% for e in form.quantity.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.price.id_for_label }}">Price per unit</label>
+                <label for="{{ form.price.id_for_label }}">Price per unit</l<label>
                 {{ form.price }}
                 {% for e in form.price.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.trade_ccy.id_for_label }}">Trade currency</label>
+                <label for="{{ form.trade_ccy.id_for_label }}">Trade currency</l<label>
                 {{ form.trade_ccy }}
                 {% for e in form.trade_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.settle_ccy.id_for_label }}">Settlement currency</label>
+                <label for="{{ form.settle_ccy.id_for_label }}">Settlement currency</l<label>
                 {{ form.settle_ccy }}
                 <div class="hint">Defaults to trade currency if blank.</div>
                 {% for e in form.settle_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.trade_dt.id_for_label }}">Trade date</label>
+                <label for="{{ form.trade_dt.id_for_label }}">Trade date</l<label>
                 {{ form.trade_dt }}
                 {% for e in form.trade_dt.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.settle_dt.id_for_label }}">Settlement date</label>
+                <label for="{{ form.settle_dt.id_for_label }}">Settlement date</l<label>
                 {{ form.settle_dt }}
                 {% for e in form.settle_dt.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel>Gross amount</label>
+                <label>Gross amount</l<label>
                 <input type="text" id="id_gross_amount" class="form-input" readonly placeholder="Auto-calculated">
                 <div class="hint">quantity × price (before charges).</div>
             </div>
             <div class="field">
-                abel>Net amount</label>
+                <label>Net amount</l<label>
                 <input type="text" id="id_net_amount" class="form-input" readonly placeholder="Auto-calculated">
                 <div class="hint">Gross ± total charges.</div>
             </div>
             <div class="field">
-                abel for="{{ form.fx_override_rate.id_for_label }}">FX override rate</label>
+                <label for="{{ form.fx_override_rate.id_for_label }}">FX override rate</l<label>
                 {{ form.fx_override_rate }}
                 <div class="hint">{{ form.fx_override_rate.help_text }}</div>
                 {% for e in form.fx_override_rate.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.order_id.id_for_label }}">Order ID</label>
+                <label for="{{ form.order_id.id_for_label }}">Order ID</l<label>
                 {{ form.order_id }}
                 <div class="hint">OMS order reference (optional).</div>
                 {% for e in form.order_id.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field full">
-                abel for="{{ form.memo.id_for_label }}">Thesis / memo</label>
+                <label for="{{ form.memo.id_for_label }}">Thesis / memo</l<label>
                 {{ form.memo }}
                 {% for e in form.memo.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
@@ -165,17 +165,17 @@
     <div class="card-body">
         <div class="form-grid">
             <div class="field">
-                abel for="{{ form.state_cd.id_for_label }}">Event state</label>
+                <label for="{{ form.state_cd.id_for_label }}">Event state</l<label>
                 {{ form.state_cd }}
                 {% for e in form.state_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel for="{{ form.book_sts_cd.id_for_label }}">Booking status</label>
+                <label for="{{ form.book_sts_cd.id_for_label }}">Booking status</l<label>
                 {{ form.book_sts_cd }}
                 {% for e in form.book_sts_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel>Manual override</label>
+                <label>Manual override</l<label>
                 <div style="display:flex;align-items:center;gap:10px;padding-top:6px;">
                     {{ form.manual_override }}
                     <span class="hint">Check if any economics were manually changed.</span>
@@ -183,7 +183,7 @@
                 {% for e in form.manual_override.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                abel>Imported</label>
+                <label>Imported</l<label>
                 <div style="display:flex;align-items:center;gap:10px;padding-top:6px;">
                     {{ form.imported_flag }}
                     <span class="hint">Check if loaded from file or broker feed.</span>
@@ -191,7 +191,7 @@
                 {% for e in form.imported_flag.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field full">
-                abel for="{{ form.override_reason.id_for_label }}">Override reason</label>
+                <label for="{{ form.override_reason.id_for_label }}">Override reason</l<label>
                 {{ form.override_reason }}
                 <div class="hint">Required when manual override is checked.</div>
                 {% for e in form.override_reason.errors %}<div class="errors">{{ e }}</div>{% endfor %}
@@ -212,22 +212,22 @@
                 {% for hidden in cform.hidden_fields %}{{ hidden }}{% endfor %}
                 <div class="form-grid">
                     <div class="field">
-                        abel>{{ cform.charge_type_cd.label }}</label>
+                        <label>{{ cform.charge_type_cd.label }}</l<label>
                         {{ cform.charge_type_cd }}
                         {% for e in cform.charge_type_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
                     </div>
                     <div class="field">
-                        abel>{{ cform.description.label }}</label>
+                        <label>{{ cform.description.label }}</l<label>
                         {{ cform.description }}
                         {% for e in cform.description.errors %}<div class="errors">{{ e }}</div>{% endfor %}
                     </div>
                     <div class="field">
-                        abel>{{ cform.rate.label }}</label>
+                        <label>{{ cform.rate.label }}</l<label>
                         {{ cform.rate }}
                         {% for e in cform.rate.errors %}<div class="errors">{{ e }}</div>{% endfor %}
                     </div>
                     <div class="field">
-                        abel>{{ cform.amount.label }}</label>
+                        <label>{{ cform.amount.label }}</l<label>
                         <input type="number" step="any"
                                name="{{ cform.amount.html_name }}"
                                id="{{ cform.amount.id_for_label }}"
@@ -236,12 +236,12 @@
                         {% for e in cform.amount.errors %}<div class="errors">{{ e }}</div>{% endfor %}
                     </div>
                     <div class="field">
-                        abel>{{ cform.cost_ccy.label }}</label>
+                        <label>{{ cform.cost_ccy.label }}</l<label>
                         {{ cform.cost_ccy }}
                         {% for e in cform.cost_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
                     </div>
                     <div class="field">
-                        abel>{{ cform.is_withholding.label }}</label>
+                        <label>{{ cform.is_withholding.label }}</l<label>
                         <div style="display:flex;align-items:center;gap:8px;padding-top:6px;">
                             {{ cform.is_withholding }}
                             <span class="hint">Withholding tax row.</span>
@@ -250,7 +250,7 @@
                     </div>
                     {% if cform.DELETE %}
                     <div class="field">
-                        abel>Remove</label>
+                        <label>Remove</l<label>
                         <div style="display:flex;align-items:center;gap:8px;padding-top:6px;">
                             {{ cform.DELETE }}
                             <span class="hint">Mark row for deletion.</span>
