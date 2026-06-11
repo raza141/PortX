@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms import DateInput
 
 from operations.ibor.models.trade import IborTradeEvent
 
@@ -33,19 +34,24 @@ class BaseTradeForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        errors = []
+
         trade_dt  = cleaned.get("trade_dt")
         settle_dt = cleaned.get("settle_dt")
         quantity  = cleaned.get("quantity")
         price     = cleaned.get("price")
 
         if trade_dt and settle_dt and settle_dt < trade_dt:
-            raise ValidationError("Settlement date cannot be before trade date.")
+            errors.append("Settlement date cannot be before trade date.")
         if quantity is not None and quantity <= 0:
-            raise ValidationError("Quantity must be greater than zero.")
+            errors.append("Quantity must be greater than zero.")
         if price is not None and price <= 0:
-            raise ValidationError("Price must be greater than zero.")
+            errors.append("Price must be greater than zero.")
         if not cleaned.get("trade_ccy"):
-            raise ValidationError("Trade currency is required.")
+            errors.append("Trade currency is required.")
+
+        if errors:
+            raise ValidationError(errors)
 
         return cleaned
 
@@ -53,14 +59,19 @@ class BaseTradeForm(forms.ModelForm):
 class IborTradeEntryForm(BaseTradeForm):
     """
     Full IBOR institutional trade ticket.
+    Extends BaseTradeForm with execution, settlement, and lifecycle fields.
     """
 
     class Meta(BaseTradeForm.Meta):
+        widgets = {
+            "trade_dt":  DateInput(attrs={"type": "date", "class": "form-input"}),
+            "settle_dt": DateInput(attrs={"type": "date", "class": "form-input"}),
+        }
         fields = BaseTradeForm.Meta.fields + [
-            #"sleeve",   #later will implement
+            # "sleeve",        # reserved — implement later
             "broker",
             "exec_venue",
-            #"custodian", Later will implement
+            # "custodian",     # reserved — implement later
             "asset_class",
             "asset_sub_class",
             "source_system",
@@ -79,19 +90,21 @@ class IborTradeEntryForm(BaseTradeForm):
 
     def clean(self):
         cleaned = super().clean()
+        errors = []
 
         if not cleaned.get("broker"):
-            raise ValidationError("Broker is required.")
+            errors.append("Broker is required.")
         if not cleaned.get("source_system"):
-            raise ValidationError("Source system is required.")
+            errors.append("Source system is required.")
 
         fx = cleaned.get("fx_override_rate")
         if fx is not None and fx <= Decimal("0"):
-            raise ValidationError("FX override rate must be greater than zero.")
+            errors.append("FX override rate must be greater than zero.")
 
         if cleaned.get("manual_override") and not (cleaned.get("override_reason") or "").strip():
-            raise ValidationError(
-                "Override reason is required when manual override is selected."
-            )
+            errors.append("Override reason is required when manual override is selected.")
+
+        if errors:
+            raise ValidationError(errors)
 
         return cleaned
