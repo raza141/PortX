@@ -176,7 +176,7 @@
             </div>
             <div class="field">
                 <label>Manual override</l<label>
-                <div style="display:flex;align-items:center;gap:10px;padding-top:6px;">
+                <div class="check-row">
                     {{ form.manual_override }}
                     <span class="hint">Check if any economics were manually changed.</span>
                 </div>
@@ -184,7 +184,7 @@
             </div>
             <div class="field">
                 <label>Imported</l<label>
-                <div style="display:flex;align-items:center;gap:10px;padding-top:6px;">
+                <div class="check-row">
                     {{ form.imported_flag }}
                     <span class="hint">Check if loaded from file or broker feed.</span>
                 </div>
@@ -242,7 +242,7 @@
                     </div>
                     <div class="field">
                         <label>{{ cform.is_withholding.label }}</l<label>
-                        <div style="display:flex;align-items:center;gap:8px;padding-top:6px;">
+                        <div class="check-row">
                             {{ cform.is_withholding }}
                             <span class="hint">Withholding tax row.</span>
                         </div>
@@ -251,7 +251,7 @@
                     {% if cform.DELETE %}
                     <div class="field">
                         <label>Remove</l<label>
-                        <div style="display:flex;align-items:center;gap:8px;padding-top:6px;">
+                        <div class="check-row">
                             {{ cform.DELETE }}
                             <span class="hint">Mark row for deletion.</span>
                         </div>
