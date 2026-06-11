@@ -1,82 +1,131 @@
+# core/operations/ibor/services/trade_booking.py
 from __future__ import annotations
 
-from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 
-from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.utils import timezone
 
-from operations.ibor.models.trade import IborTradeEvent
-from operations.ibor.services.cash_booking import CashBookingService
-from operations.ibor.services.lot_engine import LotEngine
-from operations.ibor.services.position_engine import PositionEngine
-from operations.ibor.services.validators import validate_trade_for_booking
+from operations.ibor.models.trade import (
+    IborChargeComponent,
+    IborSide,
+    IborTradeEvent,
+)
 
 
-@dataclass(frozen=True)
-class TradeBookingResult:
-    trade_id: int
-    booking_status: str
-    cash_event_count: int = 0
-    lot_count: int = 0
-    lot_consumption_count: int = 0
+AMT_DP = Decimal("0.0000000001")
+
+
+def q(value: Decimal) -> Decimal:
+    """
+    Standard 10‑dp quantizer for amounts.
+    """
+    return Decimal(value).quantize(AMT_DP, rounding=ROUND_HALF_UP)
+
+
+class TradeChargeCalculator:
+    """
+    Pure calculator for trade charges.
+    """
+
+    @staticmethod
+    def total_for_trade(trade: IborTradeEvent) -> Decimal:
+        total = Decimal("0")
+        # Sum all linked charges in their recorded currency (policy: assume same as settle_ccy V1)
+        for charge in trade.charges.all():
+            total += Decimal(charge.amount)
+        return q(total)
 
 
 class TradeBookingService:
-    @classmethod
-    def book_trade(cls, trade_id: int) -> TradeBookingResult:
-        try:
-            with transaction.atomic():
-                trade = (
-                    IborTradeEvent.objects
-                    .select_for_update()
-                    .prefetch_related("charges")
-                    .get(pk=trade_id)
-                )
+    """
+    Booking orchestration for IBOR trades.
 
-                if trade.book_sts_cd == IborTradeEvent.IborBookStatus.BOOKED:
-                    return TradeBookingResult(
-                        trade_id=trade.id,
-                        booking_status=trade.book_sts_cd,
-                    )
+    Responsibilities:
+    - validate forms (already done in forms layer)
+    - create/update IborTradeEvent and IborChargeComponent rows
+    - derive gross/total_charges/net/settlement_cash_amount
+    - default settle_ccy when missing
+    - leave cash/lot posting to other services
+    """
 
-                validation = validate_trade_for_booking(trade)
+    @staticmethod
+    @transaction.atomic
+    def derive_amounts(trade: IborTradeEvent) -> IborTradeEvent:
+        """
+        Derive gross, total_charges, net, settlement_cash_amount and settle_ccy.
+        """
+        # Gross
+        trade.gross_amount = q(Decimal(trade.quantity) * Decimal(trade.price))
 
-                trade.book_err_txt = ""
-                trade.book_sts_cd = IborTradeEvent.IborBookStatus.NEW
-                trade.save(update_fields=["book_err_txt", "book_sts_cd", "updated_at"])
+        # Total charges
+        trade.total_charges = TradeChargeCalculator.total_for_trade(trade)
 
-                cash_event_count = CashBookingService.book_trade_cash(validation)
+        # Net & settlement cash
+        if trade.side == IborSide.BUY:
+            trade.net_amount = q(trade.gross_amount + trade.total_charges)
+        else:  # SELL
+            trade.net_amount = q(trade.gross_amount - trade.total_charges)
 
-                lot_result = LotEngine.book_trade_lots(validation)
-                lot_count = lot_result.lot_count
-                lot_consumption_count = lot_result.lot_consumption_count
+        trade.settlement_cash_amount = trade.net_amount
 
-                PositionEngine.rebuild_trade_position_context(trade)
+        # Default settlement currency to trade currency if empty
+        if trade.settle_ccy_id is None:
+            trade.settle_ccy = trade.trade_ccy
 
-                trade.book_sts_cd = IborTradeEvent.IborBookStatus.BOOKED
-                trade.book_ts = timezone.now()
-                trade.book_err_txt = ""
-                trade.save(update_fields=["book_sts_cd", "book_ts", "book_err_txt", "updated_at"])
-
-                return TradeBookingResult(
-                    trade_id=trade.id,
-                    booking_status=trade.book_sts_cd,
-                    cash_event_count=cash_event_count,
-                    lot_count=lot_count,
-                    lot_consumption_count=lot_consumption_count,
-                )
-
-        except IborTradeEvent.DoesNotExist as exc:
-            raise ValidationError({"trade": [f"Trade {trade_id} does not exist."]}) from exc
-
-        except Exception as exc:
-            cls._mark_trade_error(trade_id=trade_id, error_text=str(exc))
-            raise
-
-    @classmethod
-    def _mark_trade_error(cls, trade_id: int, error_text: str) -> None:
-        IborTradeEvent.objects.filter(pk=trade_id).update(
-            book_sts_cd=IborTradeEvent.IborBookStatus.ERROR,
-            book_err_txt=str(error_text)[:400],
+        trade.save(
+            update_fields=[
+                "gross_amount",
+                "total_charges",
+                "net_amount",
+                "settlement_cash_amount",
+                "settle_ccy",
+                "updated_at",
+            ]
         )
+        return trade
+
+    @staticmethod
+    @transaction.atomic
+    def create_from_forms(trade_form, charge_formset, *, created_by=None) -> IborTradeEvent:
+        """
+        Create a new trade + charges from validated forms and derive amounts.
+
+        Usage:
+            trade = TradeBookingService.create_from_forms(form, formset, created_by=request.user)
+        """
+        if not trade_form.is_valid() or not charge_formset.is_valid():
+            # Defensive — your view should normally check is_valid first.
+            raise ValueError("Trade form or charge formset is invalid.")
+
+        # Parent trade
+        trade: IborTradeEvent = trade_form.save(commit=False)
+        if created_by is not None:
+            trade.created_by = created_by
+        trade.save()
+
+        # Attach and save child charges
+        charge_formset.instance = trade
+        charge_formset.save()
+
+        # Derive economics
+        return TradeBookingService.derive_amounts(trade)
+
+    @staticmethod
+    @transaction.atomic
+    def update_from_forms(trade: IborTradeEvent, trade_form, charge_formset) -> IborTradeEvent:
+        """
+        Update existing trade + charges (e.g. CONF correction) and re‑derive amounts.
+        """
+        if not trade_form.is_valid() or not charge_formset.is_valid():
+            raise ValueError("Trade form or charge formset is invalid.")
+
+        # Update parent
+        trade = trade_form.save(commit=False)
+        trade.id = trade_form.instance.id  # ensure we don't create a new row
+        trade.save()
+
+        # Update charges
+        charge_formset.instance = trade
+        charge_formset.save()
+
+        return TradeBookingService.derive_amounts(trade)

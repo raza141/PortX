@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block page_title %}PortX · IBOR{% endblock %}</title>
+<style>
+:root {
+    --bg:#f2f4f8; --surface:#fff; --surface-2:#f8fafc;
+    --border:#e2e8f0; --border-focus:#0f766e;
+    --text:#0f172a; --text-muted:#64748b; --text-light:#94a3b8;
+    --primary:#0f766e; --primary-dark:#115e59; --primary-pale:#f0fdf9;
+    --danger:#dc2626; --danger-pale:#fef2f2;
+    --success:#16a34a;
+    --radius-sm:8px; --radius:14px;
+    --shadow-sm:0 1px 4px rgba(15,23,42,.06);
+    --shadow:0 8px 28px rgba(15,23,42,.08);
+    --nav-h:56px; --ticker-h:44px; --sidebar-w:340px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);font-family:-apple-system,"Inter",Arial,sans-serif;color:var(--text);font-size:14px;line-height:1.6;}
+
+/* NAV */
+.ibor-nav{position:sticky;top:0;z-index:200;height:var(--nav-h);background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;gap:24px;}
+.ibor-nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.ibor-nav-brand-icon{width:32px;height:32px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;}
+.ibor-nav-brand-label{font-size:13px;font-weight:700;color:var(--text);}
+.ibor-nav-brand-sub{font-size:11px;color:var(--text-muted);}
+.ibor-nav-tabs{display:flex;align-items:center;gap:4px;flex:1;justify-content:center;}
+.ibor-nav-tab{padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:var(--text-muted);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;}
+.ibor-nav-tab:hover{background:var(--surface-2);color:var(--text);}
+.ibor-nav-tab.active{background:var(--primary-pale);color:var(--primary);}
+.ibor-nav-right{display:flex;align-items:center;gap:14px;}
+.ibor-nav-date{font-size:12px;color:var(--text-muted);}
+.ibor-nav-user{width:30px;height:30px;background:var(--primary-pale);border:1.5px solid var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--primary);}
+
+/* TICKER */
+.ibor-ticker{position:sticky;top:var(--nav-h);z-index:100;height:var(--ticker-h);background:rgba(248,250,252,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;}
+.ibor-ticker-left{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--text);}
+.ibor-ticker-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--primary-pale);color:var(--primary);letter-spacing:.04em;text-transform:uppercase;}
+.ibor-ticker-right{display:flex;align-items:center;gap:20px;font-size:13px;color:var(--text-muted);}
+.ibor-ticker-stat{display:flex;align-items:center;gap:6px;}
+.ibor-ticker-stat-value{font-weight:700;color:var(--text);}
+
+/* PAGE */
+.ibor-page{display:grid;grid-template-columns:minmax(0,1fr) var(--sidebar-w);min-height:calc(100vh - var(--nav-h) - var(--ticker-h));align-items:start;}
+.ibor-main{padding:28px 28px 60px;display:grid;gap:20px;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;}
+.card-header{padding:18px 22px 10px;border-bottom:1px solid var(--border);}
+.card-title{font-size:16px;font-weight:700;color:var(--text);}
+.card-subtitle{font-size:13px;color:var(--text-muted);margin-top:4px;}
+.card-body{padding:20px 22px 24px;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:12px;font-weight:700;color:#475569;letter-spacing:.02em;display:block;}
+.field input,.field select,.field textarea{width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);font-size:14px;font-family:inherit;transition:border-color .15s,box-shadow .15s;appearance:none;-webkit-appearance:none;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(15,118,110,.1);}
+.field input[readonly]{background:var(--surface-2);color:var(--text-muted);cursor:default;}
+.field textarea{min-height:80px;resize:vertical;}
+.form-input{width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);font-size:14px;font-family:inherit;}
+.form-input:focus{outline:none;border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(15,118,110,.1);}
+.errors{font-size:12px;color:var(--danger);}
+.hint{font-size:12px;color:var(--text-light);}
+
+/* MESSAGES */
+.messages{margin-bottom:16px;display:grid;gap:10px;}
+.message{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:12px 14px;border-radius:10px;}
+.error-banner{background:var(--danger-pale);border:1px solid #fecaca;color:#991b1b;padding:12px 14px;border-radius:10px;margin-bottom:16px;}
+
+/* SIDEBAR */
+.ibor-sidebar{position:sticky;top:calc(var(--nav-h) + var(--ticker-h));height:calc(100vh - var(--nav-h) - var(--ticker-h));overflow-y:auto;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;}
+.sidebar-section{padding:20px 22px;border-bottom:1px solid var(--border);}
+.sidebar-section:last-child{border-bottom:none;}
+.sidebar-section-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;}
+.summary-list{display:grid;gap:12px;}
+.summary-item{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;}
+.summary-label{color:var(--text-muted);}
+.summary-value{font-weight:700;color:var(--text);text-align:right;}
+.summary-value.positive{color:var(--success);}
+.summary-value.negative{color:var(--danger);}
+.summary-divider{height:1px;background:var(--border);margin:8px 0;}
+.preview-box{padding:14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:13px;color:var(--text-muted);line-height:1.7;}
+.sidebar-actions{padding:18px 22px 24px;display:grid;gap:10px;margin-top:auto;}
+.btn{width:100%;min-height:46px;padding:0 18px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;font-family:inherit;}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-secondary{background:#e2e8f0;color:#0f172a;}
+.btn-secondary:hover{background:#cbd5e1;}
+
+/* RESPONSIVE */
+@media(max-width:1020px){.ibor-page{grid-template-columns:1fr;}.ibor-sidebar{position:static;height:auto;border-left:none;border-top:1px solid var(--border);}}
+@media(max-width:760px){.form-grid{grid-template-columns:1fr;}}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+
+
+<body>
+
+<!-- ===== Top Nav ===== -->
+<nav class="ibor-nav">
+    <a class="ibor-nav-brand" href="#">
+        <div class="ibor-nav-brand-icon">P</div>
+        <div>
+            <div class="ibor-nav-brand-label">PortX</div>
+            <div class="ibor-nav-brand-sub">IBOR Engine</div>
+        </div>
+    </a>
+
+    <div class="ibor-nav-tabs">
+        <a href="{% url 'ibor:trade-create' %}"
+           class="ibor-nav-tab {% if active_tab == 'trade' %}active{% endif %}">
+            Trade
+        </a>
+        <a href="#"
+           class="ibor-nav-tab {% if active_tab == 'cash' %}active{% endif %}">
+            Cash
+        </a>
+        <a href="#"
+           class="ibor-nav-tab {% if active_tab == 'corporate' %}active{% endif %}">
+            Corporate
+        </a>
+        <a href="#"
+           class="ibor-nav-tab {% if active_tab == 'adjustment' %}active{% endif %}">
+            Adjustment
+        </a>
+        <a href="#"
+           class="ibor-nav-tab {% if active_tab == 'home' %}active{% endif %}">
+            Home
+        </a>
+    </div>
+
+    <div class="ibor-nav-right">
+        <span class="ibor-nav-date">{% now "j M Y" %}</span>
+        <div class="ibor-nav-user">R</div>
+    </div>
+</nav>
+
+<!-- ===== Ticker Bar ===== -->
+<div class="ibor-ticker">
+    <div class="ibor-ticker-left">
+        <span>{% block ticker_label %}Entry{% endblock %}</span>
+        <span class="ibor-ticker-badge">{% block ticker_badge %}IBOR{% endblock %}</span>
+    </div>
+    <div class="ibor-ticker-right">
+        {% block ticker_stats %}{% endblock %}
+    </div>
+</div>
+
+<!-- ===== Messages ===== -->
+{% if messages %}
+<div style="padding:12px 28px 0;">
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message">{{ message }}</div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ===== Non-field errors ===== -->
+{% block non_field_errors %}
+{% if form.non_field_errors or charge_formset.non_form_errors %}
+<div style="padding:12px 28px 0;">
+    <div class="error-banner">
+        {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+        {% endfor %}
+        {% for error in charge_formset.non_form_errors %}
+            <div>{{ error }}</div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+<!-- ===== Main Form ===== -->
+<form method="post" id="ibor-event-form">
+    {% csrf_token %}
+    {% block hidden_fields %}{% endblock %}
+
+    <div class="ibor-page">
+        <div class="ibor-main">
+            {% block main_content %}{% endblock %}
+        </div>
+        <div class="ibor-sidebar">
+            {% block sidebar %}{% endblock %}
+        </div>
+    </div>
+</form>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

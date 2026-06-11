@@ -1,10 +1,17 @@
+# ibor/forms/charge_forms.py
+from __future__ import annotations
+
 from django import forms
-from django.forms import inlineformset_factory
+from django.forms import BaseInlineFormSet, inlineformset_factory
 
 from operations.ibor.models.trade import IborChargeComponent, IborTradeEvent
 
 
-class IborChargeComponentForm(forms.ModelForm):
+class TradeChargeForm(forms.ModelForm):
+    """
+    Single charge row on a trade.
+    """
+
     class Meta:
         model = IborChargeComponent
         fields = [
@@ -14,27 +21,37 @@ class IborChargeComponentForm(forms.ModelForm):
             "amount",
             "cost_ccy",
             "is_withholding",
+            "override_flag",
+            "source_reference",
         ]
-        widgets = {
-            "charge_type_cd": forms.Select(attrs={"class": "form-input"}),
-            "description": forms.TextInput(
-                attrs={"class": "form-input", "placeholder": "e.g. Broker commission, SST, CDC"}
-            ),
-            "rate": forms.NumberInput(
-                attrs={"class": "form-input", "step": "0.0001", "placeholder": "Optional"}
-            ),
-            "amount": forms.NumberInput(
-                attrs={"class": "form-input charge-amount", "step": "0.0001", "placeholder": "0.00"}
-            ),
-            "cost_ccy": forms.Select(attrs={"class": "form-input"}),
-            "is_withholding": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
-        }
 
 
-IborChargeFormSet = inlineformset_factory(
-    parent_model=IborTradeEvent,
-    model=IborChargeComponent,
-    form=IborChargeComponentForm,
-    extra=3,
+class BaseTradeChargeFormSet(BaseInlineFormSet):
+    """
+    Inline formset for flexible breakdown of trade charges.
+    """
+
+    def clean(self):
+        super().clean()
+
+        for form in self.forms:
+            # Skip empty/marked-for-delete forms
+            if not hasattr(form, "cleaned_data") or not form.cleaned_data or form.cleaned_data.get("DELETE"):
+                continue
+
+            amount = form.cleaned_data.get("amount")
+            if amount is not None and amount < 0:
+                raise forms.ValidationError("Charge amount cannot be negative.")
+
+
+TradeChargeFormSet = inlineformset_factory(
+    IborTradeEvent,
+    IborChargeComponent,
+    form=TradeChargeForm,
+    formset=BaseTradeChargeFormSet,
+    extra=1,
     can_delete=True,
 )
+
+# Alias — IborChargeFormSet is the public name used across views/templates
+IborChargeFormSet = TradeChargeFormSet

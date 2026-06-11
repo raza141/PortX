@@ -1,633 +1,408 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- ===== Document Meta ===== -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IBOR Trade Entry</title>
+{% extends "ibor/base_event.html" %}
 
-    <!-- ===== Page Styles ===== -->
-    <style>
-        :root {
-            --bg: #f5f7fb;
-            --surface: #ffffff;
-            --surface-2: #f8fafc;
-            --border: #d9e2ec;
-            --text: #1f2937;
-            --muted: #6b7280;
-            --primary: #0f766e;
-            --primary-dark: #115e59;
-            --danger: #b91c1c;
-            --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-            --radius: 14px;
-        }
+{% block page_title %}PortX · Trade Entry{% endblock %}
+{% block active_tab %}trade{% endblock %}
+{% block ticker_label %}New Trade{% endblock %}
+{% block ticker_badge %}IBOR · Equity{% endblock %}
 
-        * { box-sizing: border-box; }
+{% block ticker_stats %}
+    <span class="ibor-ticker-stat">
+        <span>Gross</span>
+        <span class="ibor-ticker-stat-value" id="ticker-gross">—</span>
+    </span>
+    <span class="ibor-ticker-stat">
+        <span>Charges</span>
+        <span class="ibor-ticker-stat-value" id="ticker-charges">—</span>
+    </span>
+    <span class="ibor-ticker-stat">
+        <span>Net</span>
+        <span class="ibor-ticker-stat-value" id="ticker-net">—</span>
+    </span>
+{% endblock %}
 
-        body {
-            margin: 0;
-            background: var(--bg);
-            font-family: Inter, Arial, sans-serif;
-            color: var(--text);
-        }
+{% block hidden_fields %}
+    {{ charge_formset.management_form }}
+{% endblock %}
 
-        .page {
-            max-width: 1250px;
-            margin: 28px auto;
-            padding: 0 18px 42px;
-        }
+{% block main_content %}
 
-        .page-header { margin-bottom: 18px; }
-
-        .eyebrow {
-            font-size: 12px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--primary);
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        h1 {
-            margin: 0 0 8px;
-            font-size: 32px;
-            line-height: 1.15;
-        }
-
-        .subtext {
-            color: var(--muted);
-            max-width: 72ch;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 330px;
-            gap: 22px;
-            align-items: start;
-        }
-
-        .stack { display: grid; gap: 18px; }
-
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .card-header { padding: 18px 20px 8px; }
-        .card-title { margin: 0; font-size: 18px; }
-
-        .card-subtitle {
-            margin-top: 6px;
-            color: var(--muted);
-            font-size: 14px;
-        }
-
-        .card-body { padding: 18px 20px 22px; }
-
-        .messages {
-            margin-bottom: 16px;
-            display: grid;
-            gap: 10px;
-        }
-
-        .message {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            color: #065f46;
-            padding: 12px 14px;
-            border-radius: 10px;
-        }
-
-        .error-banner {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
-            padding: 12px 14px;
-            border-radius: 10px;
-            margin-bottom: 16px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 16px 18px;
-        }
-
-        .field {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .field.full {
-            grid-column: 1 / -1;
-        }
-
-        .field label {
-            font-size: 13px;
-            font-weight: 700;
-            color: #334155;
-        }
-
-        .form-input {
-            width: 100%;
-            min-height: 44px;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #fff;
-            color: var(--text);
-            font-size: 14px;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
-        }
-
-        .errors {
-            color: var(--danger);
-            font-size: 12px;
-        }
-
-        .hint {
-            font-size: 12px;
-            color: var(--muted);
-        }
-
-        .actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .btn {
-            min-height: 46px;
-            padding: 0 18px;
-            border-radius: 10px;
-            border: none;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #0f172a;
-        }
-
-        .summary-list {
-            display: grid;
-            gap: 14px;
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            font-size: 14px;
-        }
-
-        .summary-label { color: var(--muted); }
-        .summary-value { font-weight: 700; text-align: right; }
-
-        .preview-box {
-            padding: 14px;
-            border-radius: 12px;
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            font-size: 14px;
-            color: #334155;
-        }
-
-        .section-divider {
-            height: 1px;
-            background: var(--border);
-            margin: 18px 0 0;
-        }
-
-        @media (max-width: 1020px) {
-            .layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 760px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-
-<!-- ===== Page Container ===== -->
-<div class="page">
-
-    <!-- ===== Header Section ===== -->
-    <div class="page-header">
-        <div class="eyebrow">PortX · Operations · IBOR</div>
-        <h1>Trade Entry</h1>
-        <div class="subtext">
-            Capture one canonical trade event, attach charge components, then save only or book into cash and lot inventory.
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Trade context</h2>
+        <div class="card-subtitle">Source reference, portfolio placement, and execution route.</div>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div class="field">
+                abel for="{{ form.source_system.id_for_label }}">Source system</label>
+                {{ form.source_system }}
+                {% for e in form.source_system.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.external_ref.id_for_label }}">External reference</label>
+                {{ form.external_ref }}
+                <div class="hint">Broker contract note / voucher number.</div>
+                {% for e in form.external_ref.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.portfolio.id_for_label }}">Portfolio</label>
+                {{ form.portfolio }}
+                {% for e in form.portfolio.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.account.id_for_label }}">Account</label>
+                {{ form.account }}
+                {% for e in form.account.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.broker.id_for_label }}">Broker</label>
+                {{ form.broker }}
+                {% for e in form.broker.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.exec_venue.id_for_label }}">Exchange / venue</label>
+                {{ form.exec_venue }}
+                {% for e in form.exec_venue.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.trader_name.id_for_label }}">Trader / entered by</label>
+                {{ form.trader_name }}
+                {% for e in form.trader_name.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
         </div>
     </div>
+</section>
 
-    <!-- ===== Django Messages ===== -->
-    {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-                <div class="message">{{ message }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <!-- ===== Non-field Errors ===== -->
-    {% if form.non_field_errors or charge_formset.non_form_errors %}
-        <div class="error-banner">
-            {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
-            {% for error in charge_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
-        </div>
-    {% endif %}
-
-    <!-- ===== Main Form ===== -->
-    <form method="post" id="trade-form">
-        {% csrf_token %}
-        {{ form.action }}
-        {{ charge_formset.management_form }}
-
-        <!-- ===== Two-column Layout ===== -->
-        <div class="layout">
-
-            <!-- ===== Left Main Column ===== -->
-            <div class="stack">
-
-                <!-- ===== Trade Context Card ===== -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">Trade context</h2>
-                        <div class="card-subtitle">Source reference and portfolio placement.</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-grid">
-                            <div class="field">
-                                <label for="{{ form.source_system.id_for_label }}">Source system</label>
-                                {{ form.source_system }}
-                                {% for error in form.source_system.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="field">
-                                <label for="{{ form.external_ref.id_for_label }}">Txn / external ref</label>
-                                {{ form.external_ref }}
-                                {% for error in form.external_ref.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="field">
-                                <label for="{{ form.portfolio.id_for_label }}">Portfolio</label>
-                                {{ form.portfolio }}
-                                {% for error in form.portfolio.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="field">
-                                <label for="{{ form.account.id_for_label }}">Account</label>
-                                {{ form.account }}
-                                {% for error in form.account.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="field">
-                                <label for="{{ form.broker.id_for_label }}">Broker</label>
-                                {{ form.broker }}
-                                {% for error in form.broker.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="field">
-                                <label for="{{ form.exec_venue.id_for_label }}">Exchange / execution venue</label>
-                                {{ form.exec_venue }}
-                                {% for error in form.exec_venue.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ===== Economics Card ===== -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">Economics</h2>
-                        <div class="card-subtitle">Security, side, price, quantity, currencies, and dates.</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-grid">
-                            <div class="field full">
-                                <label for="{{ form.instrument.id_for_label }}">Instrument</label>
-                                {{ form.instrument }}
-                                {% for error in form.instrument.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.side.id_for_label }}">Action</label>
-                                {{ form.side }}
-                                {% for error in form.side.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.fx_rate.id_for_label }}">FX rate</label>
-                                {{ form.fx_rate }}
-                                <div class="hint">{{ form.fx_rate.help_text }}</div>
-                                {% for error in form.fx_rate.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.quantity.id_for_label }}">Volume / quantity</label>
-                                {{ form.quantity }}
-                                {% for error in form.quantity.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.price.id_for_label }}">Cost / price</label>
-                                {{ form.price }}
-                                {% for error in form.price.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.trade_ccy.id_for_label }}">Currency</label>
-                                {{ form.trade_ccy }}
-                                {% for error in form.trade_ccy.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.settle_ccy.id_for_label }}">Settlement currency</label>
-                                {{ form.settle_ccy }}
-                                <div class="hint">Defaults to trade currency if left blank.</div>
-                                {% for error in form.settle_ccy.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.trade_dt.id_for_label }}">Trade date</label>
-                                {{ form.trade_dt }}
-                                {% for error in form.trade_dt.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.settle_dt.id_for_label }}">Settle date</label>
-                                {{ form.settle_dt }}
-                                {% for error in form.settle_dt.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.gross_amount.id_for_label }}">Gross amount</label>
-                                {{ form.gross_amount }}
-                                {% for error in form.gross_amount.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field">
-                                <label for="{{ form.net_amount.id_for_label }}">Net amount</label>
-                                {{ form.net_amount }}
-                                <div class="hint">Gross adjusted by total charges.</div>
-                                {% for error in form.net_amount.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-
-                            <div class="field full">
-                                <label for="{{ form.memo.id_for_label }}">Thesis / memo</label>
-                                {{ form.memo }}
-                                {% for error in form.memo.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ===== Charges Card ===== -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">Charges</h2>
-                        <div class="card-subtitle">Commission, levy, VAT/SST, CDC, tax, and other trade-linked charges.</div>
-                    </div>
-                    <div class="card-body">
-                        {% for cform in charge_formset %}
-                            <div class="card" style="margin-bottom: 14px; box-shadow:none;">
-                                <div class="card-body">
-                                    {% for hidden in cform.hidden_fields %}{{ hidden }}{% endfor %}
-                                    <div class="form-grid">
-                                        <div class="field">
-                                            <label>{{ cform.charge_type_cd.label }}</label>
-                                            {{ cform.charge_type_cd }}
-                                            {% for error in cform.charge_type_cd.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </div>
-                                        <div class="field">
-                                            <label>{{ cform.description.label }}</label>
-                                            {{ cform.description }}
-                                            {% for error in cform.description.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </div>
-                                        <div class="field">
-                                            <label>{{ cform.rate.label }}</label>
-                                            {{ cform.rate }}
-                                            {% for error in cform.rate.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </div>
-                                        <div class="field">
-                                            <label>{{ cform.amount.label }}</label>
-                                            {{ cform.amount }}
-                                            {% for error in cform.amount.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </div>
-                                        <div class="field">
-                                            <label>{{ cform.cost_ccy.label }}</label>
-                                            {{ cform.cost_ccy }}
-                                            {% for error in cform.cost_ccy.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </div>
-                                        <div class="field">
-                                            <label>{{ cform.is_withholding.label }}</label>
-                                            <div style="padding-top:10px;">{{ cform.is_withholding }}</div>
-                                            {% for error in cform.is_withholding.errors %}<div class="errors">{{ error }}</div>{% endfor %}
-                                        </div>
-                                        {% if cform.DELETE %}
-                                            <div class="field">
-                                                <label>Delete</label>
-                                                <div style="padding-top:10px;">{{ cform.DELETE }}</div>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-
-                        <div class="actions">
-                            <button type="submit" name="submit_action" value="save" class="btn btn-secondary">Save only</button>
-                            <button type="submit" name="submit_action" value="book" class="btn btn-primary">Save &amp; Book</button>
-                        </div>
-                    </div>
-                </section>
-
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Economics</h2>
+        <div class="card-subtitle">Security, side, quantity, price, currencies, and dates.</div>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div class="field full">
+                abel for="{{ form.instrument.id_for_label }}">Instrument</label>
+                {{ form.instrument }}
+                {% for e in form.instrument.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
-
-            <!-- ===== Right Sidebar Column ===== -->
-            <aside class="stack">
-
-                <!-- ===== Live Preview Card ===== -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">Preview</h2>
-                        <div class="card-subtitle">Live economics and downstream effect.</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="summary-list">
-                            <div class="summary-item">
-                                <span class="summary-label">Gross amount</span>
-                                <span class="summary-value" id="gross-preview">—</span>
-                            </div>
-                            <div class="summary-item">
-                                <span class="summary-label">Total charges</span>
-                                <span class="summary-value" id="charges-preview">—</span>
-                            </div>
-                            <div class="summary-item">
-                                <span class="summary-label">Net amount</span>
-                                <span class="summary-value" id="net-preview">—</span>
-                            </div>
-                            <div class="summary-item">
-                                <span class="summary-label">Settlement cash</span>
-                                <span class="summary-value" id="cash-preview">—</span>
-                            </div>
-                            <div class="summary-item">
-                                <span class="summary-label">Action</span>
-                                <span class="summary-value" id="side-preview">—</span>
-                            </div>
-                        </div>
-
-                        <div class="section-divider"></div>
-
-                        <div class="preview-box" id="flow-preview" style="margin-top: 18px;">
-                            Enter trade economics and charges to preview the booking effect.
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ===== Charge Mapping Help Card ===== -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">Charge mapping</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="preview-box">
-                            Use COMM for broker commission, LEVY for PSX/CDC/exchange levies, VAT for SST/GST, STAMP for stamp duty, TAX for withholding or advance tax, and OTHER for exceptional items.
-                        </div>
-                    </div>
-                </section>
-
-            </aside>
-
+            <div class="field">
+                abel for="{{ form.side.id_for_label }}">Side / action</label>
+                {{ form.side }}
+                {% for e in form.side.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.order_type.id_for_label }}">Order type</label>
+                {{ form.order_type }}
+                {% for e in form.order_type.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.quantity.id_for_label }}">Quantity / volume</label>
+                {{ form.quantity }}
+                {% for e in form.quantity.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.price.id_for_label }}">Price per unit</label>
+                {{ form.price }}
+                {% for e in form.price.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.trade_ccy.id_for_label }}">Trade currency</label>
+                {{ form.trade_ccy }}
+                {% for e in form.trade_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.settle_ccy.id_for_label }}">Settlement currency</label>
+                {{ form.settle_ccy }}
+                <div class="hint">Defaults to trade currency if blank.</div>
+                {% for e in form.settle_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.trade_dt.id_for_label }}">Trade date</label>
+                {{ form.trade_dt }}
+                {% for e in form.trade_dt.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.settle_dt.id_for_label }}">Settlement date</label>
+                {{ form.settle_dt }}
+                {% for e in form.settle_dt.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel>Gross amount</label>
+                <input type="text" id="id_gross_amount" class="form-input" readonly placeholder="Auto-calculated">
+                <div class="hint">quantity × price (before charges).</div>
+            </div>
+            <div class="field">
+                abel>Net amount</label>
+                <input type="text" id="id_net_amount" class="form-input" readonly placeholder="Auto-calculated">
+                <div class="hint">Gross ± total charges.</div>
+            </div>
+            <div class="field">
+                abel for="{{ form.fx_override_rate.id_for_label }}">FX override rate</label>
+                {{ form.fx_override_rate }}
+                <div class="hint">{{ form.fx_override_rate.help_text }}</div>
+                {% for e in form.fx_override_rate.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.order_id.id_for_label }}">Order ID</label>
+                {{ form.order_id }}
+                <div class="hint">OMS order reference (optional).</div>
+                {% for e in form.order_id.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field full">
+                abel for="{{ form.memo.id_for_label }}">Thesis / memo</label>
+                {{ form.memo }}
+                {% for e in form.memo.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
         </div>
-    </form>
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Controls</h2>
+        <div class="card-subtitle">Booking status, override flags, and lifecycle state.</div>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div class="field">
+                abel for="{{ form.state_cd.id_for_label }}">Event state</label>
+                {{ form.state_cd }}
+                {% for e in form.state_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel for="{{ form.book_sts_cd.id_for_label }}">Booking status</label>
+                {{ form.book_sts_cd }}
+                {% for e in form.book_sts_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel>Manual override</label>
+                <div style="display:flex;align-items:center;gap:10px;padding-top:6px;">
+                    {{ form.manual_override }}
+                    <span class="hint">Check if any economics were manually changed.</span>
+                </div>
+                {% for e in form.manual_override.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                abel>Imported</label>
+                <div style="display:flex;align-items:center;gap:10px;padding-top:6px;">
+                    {{ form.imported_flag }}
+                    <span class="hint">Check if loaded from file or broker feed.</span>
+                </div>
+                {% for e in form.imported_flag.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field full">
+                abel for="{{ form.override_reason.id_for_label }}">Override reason</label>
+                {{ form.override_reason }}
+                <div class="hint">Required when manual override is checked.</div>
+                {% for e in form.override_reason.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Charges</h2>
+        <div class="card-subtitle">Commission, levy, VAT/SST, stamp duty, withholding tax, and other trade-linked costs.</div>
+    </div>
+    <div class="card-body">
+        {% for cform in charge_formset %}
+        <div class="card" style="margin-bottom:14px;box-shadow:none;">
+            <div class="card-body" style="padding:16px 18px;">
+                {% for hidden in cform.hidden_fields %}{{ hidden }}{% endfor %}
+                <div class="form-grid">
+                    <div class="field">
+                        abel>{{ cform.charge_type_cd.label }}</label>
+                        {{ cform.charge_type_cd }}
+                        {% for e in cform.charge_type_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="field">
+                        abel>{{ cform.description.label }}</label>
+                        {{ cform.description }}
+                        {% for e in cform.description.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="field">
+                        abel>{{ cform.rate.label }}</label>
+                        {{ cform.rate }}
+                        {% for e in cform.rate.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="field">
+                        abel>{{ cform.amount.label }}</label>
+                        <input type="number" step="any"
+                               name="{{ cform.amount.html_name }}"
+                               id="{{ cform.amount.id_for_label }}"
+                               value="{{ cform.amount.value|default:'' }}"
+                               class="form-input charge-amount">
+                        {% for e in cform.amount.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="field">
+                        abel>{{ cform.cost_ccy.label }}</label>
+                        {{ cform.cost_ccy }}
+                        {% for e in cform.cost_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="field">
+                        abel>{{ cform.is_withholding.label }}</label>
+                        <div style="display:flex;align-items:center;gap:8px;padding-top:6px;">
+                            {{ cform.is_withholding }}
+                            <span class="hint">Withholding tax row.</span>
+                        </div>
+                        {% for e in cform.is_withholding.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+                    </div>
+                    {% if cform.DELETE %}
+                    <div class="field">
+                        abel>Remove</label>
+                        <div style="display:flex;align-items:center;gap:8px;padding-top:6px;">
+                            {{ cform.DELETE }}
+                            <span class="hint">Mark row for deletion.</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Live preview</div>
+    <div class="summary-list">
+        <div class="summary-item">
+            <span class="summary-label">Side</span>
+            <span class="summary-value" id="prev-side">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Quantity</span>
+            <span class="summary-value" id="prev-qty">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Price</span>
+            <span class="summary-value" id="prev-price">—</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+            <span class="summary-label">Gross amount</span>
+            <span class="summary-value" id="prev-gross">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Total charges</span>
+            <span class="summary-value" id="prev-charges">—</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+            <span class="summary-label">Net amount</span>
+            <span class="summary-value" id="prev-net">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Settlement cash</span>
+            <span class="summary-value" id="prev-cash">—</span>
+        </div>
+    </div>
 </div>
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Booking effect</div>
+    <div class="preview-box" id="prev-effect">
+        Enter trade economics and charges to preview the booking effect.
+    </div>
+</div>
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Charge mapping guide</div>
+    <div class="preview-box">
+        <strong>COMM</strong> — Broker commission<br>
+        <strong>LEVY</strong> — PSX / CDC / exchange levies<br>
+        <strong>VAT</strong> — SST / GST / VAT<br>
+        <strong>STAMP</strong> — Stamp duty<br>
+        <strong>TAX</strong> — Withholding or advance tax<br>
+        <strong>OTHER</strong> — Exceptional items
+    </div>
+</div>
+<div class="sidebar-actions">
+    <button type="submit" name="submit_action" value="book" class="btn btn-primary">
+        Save &amp; Book
+    </button>
+    <button type="submit" name="submit_action" value="save" class="btn btn-secondary">
+        Save only
+    </button>
+</div>
+{% endblock %}
 
-<!-- ===== Page Script ===== -->
+{% block extra_scripts %}
 <script>
-    (function () {
-        const quantityInput = document.getElementById("id_quantity");
-        const priceInput = document.getElementById("id_price");
-        const grossInput = document.getElementById("id_gross_amount");
-        const netInput = document.getElementById("id_net_amount");
-        const tradeCcyInput = document.getElementById("id_trade_ccy");
-        const settleCcyInput = document.getElementById("id_settle_ccy");
-        const sideInput = document.getElementById("id_side");
+(function () {
+    var qtyEl       = document.getElementById("id_quantity");
+    var priceEl     = document.getElementById("id_price");
+    var sideEl      = document.getElementById("id_side");
+    var tradeCcyEl  = document.getElementById("id_trade_ccy");
+    var settleCcyEl = document.getElementById("id_settle_ccy");
+    var grossEl     = document.getElementById("id_gross_amount");
+    var netEl       = document.getElementById("id_net_amount");
+    var prevSide    = document.getElementById("prev-side");
+    var prevQty     = document.getElementById("prev-qty");
+    var prevPrice   = document.getElementById("prev-price");
+    var prevGross   = document.getElementById("prev-gross");
+    var prevCharges = document.getElementById("prev-charges");
+    var prevNet     = document.getElementById("prev-net");
+    var prevCash    = document.getElementById("prev-cash");
+    var prevEffect  = document.getElementById("prev-effect");
+    var tickerGross   = document.getElementById("ticker-gross");
+    var tickerCharges = document.getElementById("ticker-charges");
+    var tickerNet     = document.getElementById("ticker-net");
 
-        const grossPreview = document.getElementById("gross-preview");
-        const chargesPreview = document.getElementById("charges-preview");
-        const netPreview = document.getElementById("net-preview");
-        const cashPreview = document.getElementById("cash-preview");
-        const sidePreview = document.getElementById("side-preview");
-        const flowPreview = document.getElementById("flow-preview");
-
-        function parseNum(value) {
-            const n = parseFloat(value);
-            return Number.isFinite(n) ? n : 0;
+    function toNum(val) { var n = parseFloat(val); return isFinite(n) ? n : 0; }
+    function fmt(n) { return n.toLocaleString("en-US", {minimumFractionDigits:4, maximumFractionDigits:4}); }
+    function ccyText() {
+        if (!tradeCcyEl) return "";
+        var opt = tradeCcyEl.selectedOptions && tradeCcyEl.selectedOptions[0];
+        return opt ? opt.text : "";
+    }
+    function sumCharges() {
+        var total = 0;
+        document.querySelectorAll(".charge-amount").forEach(function(el) { total += toNum(el.value); });
+        return total;
+    }
+    function syncSettleCcy() {
+        if (tradeCcyEl && settleCcyEl && !settleCcyEl.value) settleCcyEl.value = tradeCcyEl.value;
+    }
+    function update() {
+        var qty     = toNum(qtyEl && qtyEl.value);
+        var price   = toNum(priceEl && priceEl.value);
+        var charges = sumCharges();
+        var side    = sideEl ? sideEl.value : "";
+        var ccy     = ccyText();
+        var gross   = qty * price;
+        var net     = side === "BUY" ? gross + charges : side === "SELL" ? gross - charges : gross;
+        if (grossEl) grossEl.value = gross ? fmt(gross) : "";
+        if (netEl)   netEl.value   = net   ? fmt(net)   : "";
+        if (prevSide)    prevSide.textContent    = side  || "—";
+        if (prevQty)     prevQty.textContent     = qty   ? fmt(qty)   : "—";
+        if (prevPrice)   prevPrice.textContent   = price ? fmt(price) : "—";
+        if (prevGross)   prevGross.textContent   = gross ? fmt(gross) + " " + ccy : "—";
+        if (prevCharges) prevCharges.textContent = fmt(charges) + " " + ccy;
+        if (prevNet)     prevNet.textContent     = net   ? fmt(net)   + " " + ccy : "—";
+        if (prevCash) {
+            if (!side || !gross) { prevCash.textContent = "—"; prevCash.className = "summary-value"; }
+            else if (side === "BUY") { prevCash.textContent = "-" + fmt(net) + " " + ccy; prevCash.className = "summary-value negative"; }
+            else { prevCash.textContent = "+" + fmt(net) + " " + ccy; prevCash.className = "summary-value positive"; }
         }
-
-        function selectedCurrencyText() {
-            return tradeCcyInput?.selectedOptions?.[0]?.text || "";
+        if (prevEffect) {
+            if (!side || !gross) { prevEffect.textContent = "Enter trade economics and charges to preview the booking effect."; }
+            else if (side === "BUY") { prevEffect.textContent = "BUY — will create one settlement cash outflow event and open one new tax lot. Charges are added to total acquisition cost."; }
+            else if (side === "SELL") { prevEffect.textContent = "SELL — will create one settlement cash inflow event and consume existing FIFO lots. Charges reduce net proceeds."; }
         }
-
-        function syncSettlementCurrency() {
-            if (tradeCcyInput && settleCcyInput && !settleCcyInput.value) {
-                settleCcyInput.value = tradeCcyInput.value;
-            }
-        }
-
-        function totalCharges() {
-            let total = 0;
-            document.querySelectorAll(".charge-amount").forEach(input => {
-                total += parseNum(input.value);
-            });
-            return total;
-        }
-
-        function updatePreview() {
-            const qty = parseNum(quantityInput?.value);
-            const price = parseNum(priceInput?.value);
-            const gross = qty * price;
-            const charges = totalCharges();
-            const side = sideInput?.value || "";
-            const ccyText = selectedCurrencyText();
-
-            let net = gross;
-            if (side === "BUY") {
-                net = gross + charges;
-            } else if (side === "SELL") {
-                net = gross - charges;
-            }
-
-            if (grossInput) grossInput.value = gross ? gross.toFixed(4) : "";
-            if (netInput) netInput.value = net ? net.toFixed(4) : "";
-
-            grossPreview.textContent = gross ? `${gross.toFixed(4)} ${ccyText}` : "—";
-            chargesPreview.textContent = charges ? `${charges.toFixed(4)} ${ccyText}` : `0.0000 ${ccyText}`.trim();
-            netPreview.textContent = net ? `${net.toFixed(4)} ${ccyText}` : "—";
-            sidePreview.textContent = side || "—";
-
-            if (!side || !gross) {
-                cashPreview.textContent = "—";
-                flowPreview.textContent = "Enter trade economics and charges to preview the booking effect.";
-                return;
-            }
-
-            if (side === "BUY") {
-                cashPreview.textContent = `-${net.toFixed(4)} ${ccyText}`;
-                flowPreview.textContent = "BUY will create one settlement cash outflow event and open one tax lot. Charges increase total acquisition cost.";
-            } else if (side === "SELL") {
-                cashPreview.textContent = `+${net.toFixed(4)} ${ccyText}`;
-                flowPreview.textContent = "SELL will create one settlement cash inflow event and consume FIFO lots. Charges reduce net proceeds.";
-            } else {
-                cashPreview.textContent = "—";
-                flowPreview.textContent = "Unsupported side selected.";
-            }
-        }
-
-        if (tradeCcyInput) {
-            tradeCcyInput.addEventListener("change", function () {
-                syncSettlementCurrency();
-                updatePreview();
-            });
-        }
-
-        if (settleCcyInput) settleCcyInput.addEventListener("change", updatePreview);
-        if (quantityInput) quantityInput.addEventListener("input", updatePreview);
-        if (priceInput) priceInput.addEventListener("input", updatePreview);
-        if (sideInput) sideInput.addEventListener("change", updatePreview);
-
-        document.querySelectorAll(".charge-amount").forEach(input => {
-            input.addEventListener("input", updatePreview);
-        });
-
-        syncSettlementCurrency();
-        updatePreview();
-    })();
+        if (tickerGross)   tickerGross.textContent   = gross   ? fmt(gross)   + " " + ccy : "—";
+        if (tickerCharges) tickerCharges.textContent = charges ? fmt(charges) + " " + ccy : "—";
+        if (tickerNet)     tickerNet.textContent     = net     ? fmt(net)     + " " + ccy : "—";
+    }
+    [qtyEl, priceEl].forEach(function(el) { if (el) el.addEventListener("input", update); });
+    [sideEl, tradeCcyEl, settleCcyEl].forEach(function(el) {
+        if (el) el.addEventListener("change", function() { syncSettleCcy(); update(); });
+    });
+    document.querySelectorAll(".charge-amount").forEach(function(el) { el.addEventListener("input", update); });
+    syncSettleCcy();
+    update();
+}());
 </script>
-</body>
-</html>
-
-
-</query>
+{% endblock %}

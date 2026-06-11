@@ -1,7 +1,11 @@
-# core/operations/ibor/models/trade.py
+# ibor/models/trade.py
+# This is like IborTradeEvent
+
+
 from __future__ import annotations
 
 from django.db import models
+
 from .common import IborTimeStampedModel, IborState
 
 
@@ -9,40 +13,50 @@ class IborSide(models.TextChoices):
     BUY = "BUY", "Buy"
     SELL = "SELL", "Sell"
 
+
+class IborBookStatus(models.TextChoices):
+    NEW = "NEW", "New"
+    BOOKED = "BOK", "Booked"
+    ERROR = "ERR", "Error"
+    REVERSED = "REV", "Reversed"
+
+
+class IborChargeType(models.TextChoices):
+    """
+    Generic charge types. Use description for broker-specific labels.
+    """
+    COMM = "COMM", "Commission"
+    TAX = "TAX", "Tax"
+    LEVY = "LEVY", "Levy/Fee"
+    VAT = "VAT", "VAT/GST/SST"
+    STAMP = "STAMP", "Stamp duty"
+    OTHER = "OTHER", "Other"
+
+
 class IborTradeEvent(IborTimeStampedModel):
     """
-    Canonical trade event (broker-agnostic).
+    Canonical IBOR trade event (TRD_EVT).
 
-    This is the core 'TRD_EVT' for IBOR.
-    - Created from manual entry OR from approved staged trades.
-    - it support versioning/corrections without deleting history.
-    - State-driven truth levels (EXEC/CONF/SETTLED).
+    - Broker‑agnostic, portfolio‑centric record.
+    - Supports versioning (CORR) via replaces_trade and version_no.
+    - Lifecycle: EXEC / CONF / SETTLED / CXL / CORR.
     """
-    class IborBookStatus(models.TextChoices):
-        NEW = "NEW", "New"
-        BOOKED = "BOK", "Booked"
-        ERROR = "ERR", "Error"
-        REVERSED = "REV", "Reversed"
 
     # Lineage & versioning
-    # where the trade come from
     source_system = models.CharField(
         max_length=40,
-        help_text="Where the trade come from Adapter/system identifier (e.g., 'psx_broker_x', 'sarwa', 'manual').",
+        help_text="Adapter/system identifier (e.g. 'psx_broker_x', 'sarwa', 'manual').",
     )
-    # The broker or source’s own trade identifier (voucher / contract note / execution id).
     external_ref = models.CharField(
         max_length=120,
         blank=True,
         default="",
-        help_text="The broker or source’s own trade identifier (voucher / contract note / execution id).",
+        help_text="Broker/source trade id (voucher / contract note / execution id).",
     )
-    # Which “revision” of the same external trade ref this row represents.
     version_no = models.PositiveIntegerField(
         default=1,
-        help_text="Version number for the same external_ref (CORR creates a new version).",
+        help_text="Version number for same external_ref (CORR creates new version).",
     )
-    # If a broker sends a correction, you don’t edit the old row — you create a new trade row and point it to the old one.
     replaces_trade = models.ForeignKey(
         "self",
         null=True,
@@ -52,56 +66,59 @@ class IborTradeEvent(IborTimeStampedModel):
         help_text="If this is a correction, points to the trade it replaces.",
     )
 
-    # Who/where
+    # Who / where
     portfolio = models.ForeignKey(
         "portfolio.Portfolio",
         on_delete=models.PROTECT,
         related_name="ibor_trades",
-        help_text="Portfolio owning the position (multi-base supported via portfolio.base_ccy).",
+        help_text="Portfolio owning the position.",
     )
     account = models.ForeignKey(
         "portfolio.Account",
         on_delete=models.PROTECT,
         related_name="ibor_trades_ac",
-        help_text="Account id where the trade initiate"
-
+        help_text="Account where the trade is initiated.",
     )
+    # sleeve is removed for V1 will add back to V2
     broker = models.ForeignKey(
         "masters.Broker",
+        on_delete=models.PROTECT,
+        related_name="ibor_trades",
+        help_text="Broker/counterparty executing or confirming the trade.",
+    )
+    exec_venue = models.ForeignKey(
+        "masters.Exchange",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="ibor_trades",
-        help_text="Broker/counterparty executing or confirming the trade (optional in V1).",
-    )
-    exec_venue = models.ForeignKey(
-        "masters.Exchange",   # or masters.ListingVenue if you have that
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name="ibor_trades",
-        help_text="Execution venue/exchange (PSX, NASDAQ, OTC venue). Optional; can default from instrument.",
+        help_text="Execution venue/exchange (PSX, NASDAQ, OTC, etc.).",
     )
 
-    # What (What came from instrument)
+    # custodian also removed and will add back to v2
+
+    # What
     instrument = models.ForeignKey(
         "instruments.SecurityListing",
         on_delete=models.PROTECT,
         related_name="ibor_trades",
-        help_text="Instrument master key (map symbol/ISIN/ticker into this).",
+        help_text="Listing-level security (e.g. BOP@PSX).",
     )
     asset_class = models.ForeignKey(
         "instruments.AssetClass",
-        null=True, blank=True,
+        null=True,
+        blank=True,
         on_delete=models.SET_NULL,
         related_name="ibor_trades",
-        help_text="Optional snapshot of asset class at trade time. Prefer deriving from instrument.",
+        help_text="Optional snapshot of asset class at trade time.",
     )
     asset_sub_class = models.ForeignKey(
         "instruments.AssetSubClass",
-        null=True, blank=True,
+        null=True,
+        blank=True,
         on_delete=models.SET_NULL,
         related_name="ibor_trades",
-        help_text="Optional snapshot of asset sub-class at trade time. Prefer deriving from instrument.",
+        help_text="Optional snapshot of asset sub‑class at trade time.",
     )
 
     side = models.CharField(
@@ -119,20 +136,22 @@ class IborTradeEvent(IborTimeStampedModel):
         decimal_places=10,
         help_text="Trade price per unit.",
     )
-    # ✅ Currency should come from masters
+
     trade_ccy = models.ForeignKey(
         "masters.Currency",
+        null= True,
+        blank=True,
         on_delete=models.PROTECT,
         related_name="ibor_trade_ccy_trades",
         help_text="Trade/contract currency (ISO3 from masters).",
     )
-
     settle_ccy = models.ForeignKey(
         "masters.Currency",
-        null=True, blank=True,
+        null=True,
+        blank=True,
         on_delete=models.PROTECT,
         related_name="ibor_settle_ccy_trades",
-        help_text="Settlement currency (optional; defaults to trade_ccy if null).",
+        help_text="Settlement currency (defaults to trade_ccy if null).",
     )
 
     trade_dt = models.DateField(
@@ -142,16 +161,75 @@ class IborTradeEvent(IborTimeStampedModel):
         help_text="Settlement date (cash/security movement date).",
     )
 
-    # Economics
+    # Front‑office / execution context
+    order_type = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        help_text="Order type (e.g. Market, Limit).",
+    )
+    order_id = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Upstream OMS order id (if available).",
+    )
+    execution_id = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Execution/fill id from broker/OMS.",
+    )
+    trader_name = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Trader or user who placed the order (optional).",
+    )
+
+    imported_flag = models.BooleanField(
+        default=False,
+        help_text="True if created via import/adapter instead of manual screen.",
+    )
+    manual_override = models.BooleanField(
+        default=False,
+        help_text="True if economics were manually overridden.",
+    )
+    override_reason = models.CharField(
+        max_length=250,
+        blank=True,
+        default="",
+        help_text="Reason for manual override (required when manual_override=True).",
+    )
+    fx_override_rate = models.DecimalField(
+        max_digits=20,
+        decimal_places=10,
+        null=True,
+        blank=True,
+        help_text="Optional FX override rate (trade_ccy -> settle_ccy).",
+    )
+
+    # Economics (derived by service)
     gross_amount = models.DecimalField(
         max_digits=28,
         decimal_places=10,
         help_text="Gross = quantity * price in trade_ccy (before charges).",
     )
+    total_charges = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        default=0,
+        help_text="Sum of all linked charge components (normalized into settle_ccy policy).",
+    )
     net_amount = models.DecimalField(
         max_digits=28,
         decimal_places=10,
-        help_text="Net amount after charges (in settlement currency logic).",
+        help_text="Net amount after charges (settlement logic).",
+    )
+    settlement_cash_amount = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        help_text="Cash that should move on settlement date in settle_ccy.",
     )
 
     # Lifecycle
@@ -159,12 +237,12 @@ class IborTradeEvent(IborTimeStampedModel):
         max_length=10,
         choices=IborState.choices,
         default=IborState.EXEC,
-        help_text="Lifecycle state for truth level selection (EXEC/CONF/SETTLED/CXL/CORR).",
+        help_text="Lifecycle state (EXEC/CONF/SETTLED/CXL/CORR).",
     )
     state_ts = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="Timestamp when current state was achieved (optional).",
+        help_text="Timestamp when current state was achieved.",
     )
     book_sts_cd = models.CharField(
         max_length=3,
@@ -173,13 +251,11 @@ class IborTradeEvent(IborTimeStampedModel):
         db_index=True,
         help_text="Booking status: NEW/BOK/ERR/REV.",
     )
-
     book_ts = models.DateTimeField(
         null=True,
         blank=True,
         help_text="When booking was completed (set by booking engine).",
     )
-
     book_err_txt = models.CharField(
         max_length=400,
         blank=True,
@@ -190,7 +266,7 @@ class IborTradeEvent(IborTimeStampedModel):
     memo = models.TextField(
         blank=True,
         default="",
-        help_text="Optional free-text notes (parsing notes, ops adjustments, etc.).",
+        help_text="Optional free‑text notes (ops commentary, parsing results, etc.).",
     )
 
     class Meta:
@@ -201,38 +277,31 @@ class IborTradeEvent(IborTimeStampedModel):
             models.Index(fields=["instrument", "trade_dt"]),
             models.Index(fields=["state_cd", "trade_dt"]),
             models.Index(fields=["source_system", "external_ref", "version_no"]),
+            models.Index(fields=["broker", "trade_dt"]),
+            models.Index(fields=["book_sts_cd", "trade_dt"]),
         ]
         constraints = [
             models.UniqueConstraint(
                 fields=["source_system", "external_ref", "version_no"],
                 name="uq_ibor_trd_evt_src_ref_ver",
-            )
+            ),
+            models.CheckConstraint(
+                check=models.Q(quantity__gt=0),
+                name="ck_ibor_trade_qty_gt_0",
+            ),
+            models.CheckConstraint(
+                check=models.Q(price__gt=0),
+                name="ck_ibor_trade_px_gt_0",
+            ),
         ]
 
     def __str__(self) -> str:
         return f"{self.portfolio_id}:{self.instrument_id}:{self.side} {self.quantity} @ {self.price} ({self.trade_dt})"
 
 
-class IborChargeType(models.TextChoices):
-    """
-    Generic charge types. Use description for broker-specific labels.
-    """
-    COMM = "COMM", "Commission"
-    TAX = "TAX", "Tax"
-    LEVY = "LEVY", "Levy/Fee"
-    VAT = "VAT", "VAT/GST/SST"
-    STAMP = "STAMP", "Stamp duty"
-    OTHER = "OTHER", "Other"
-
-
 class IborChargeComponent(IborTimeStampedModel):
     """
-    This model will let us record the flexible breakdown of commissions/taxes/fees per trade
-    Examples
-    --------
-    - PSX Laga, SECP Laga, NCCPL, CDC, Adv Tax, SST
-    - US SEC fee, FINRA fee
-    - Platform fees on Sarwa
+    Flexible breakdown of commissions/taxes/fees per trade.
     """
 
     trade = models.ForeignKey(
@@ -265,19 +334,26 @@ class IborChargeComponent(IborTimeStampedModel):
         decimal_places=10,
         help_text="Charge amount (positive number).",
     )
-
     cost_ccy = models.ForeignKey(
         "masters.Currency",
-        on_delete=models.SET_NULL,
-        null=True,
-        max_length=3,
-        help_text="Charge currency ISO3 .",
+        on_delete=models.PROTECT,
+        related_name="ibor_trade_charge_ccy",
+        help_text="Charge currency ISO3.",
     )
     is_withholding = models.BooleanField(
         default=False,
-        help_text="True if this is withholding tax (useful later for dividends/corporate actions).",
+        help_text="True if this is withholding tax.",
     )
-
+    override_flag = models.BooleanField(
+        default=False,
+        help_text="True if ops manually changed this charge.",
+    )
+    source_reference = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Optional source row id / code.",
+    )
 
     class Meta:
         db_table = "ibor_chg_cmp"
@@ -285,17 +361,20 @@ class IborChargeComponent(IborTimeStampedModel):
             models.Index(fields=["trade"]),
             models.Index(fields=["charge_type_cd"]),
         ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(amount__gte=0),
+                name="ck_ibor_charge_amt_gte_0",
+            ),
+        ]
 
     def __str__(self) -> str:
-        return f"{self.trade_id}:{self.charge_type_cd}:{self.amount} - {self.cost_ccy}"
+        return f"{self.trade_id}:{self.charge_type_cd}:{self.amount} {self.cost_ccy_id}"
 
 
 class IborTradeStateHistory(IborTimeStampedModel):
     """
-    Optional: Keep a full timeline of state transitions for audit and replay.
-
-    V1 can work without it (store only current state on trade),
-    but this gives you future Gen3 / bi-temporal behavior without redesign.
+    Timeline of state transitions for audit and replay.
     """
 
     trade = models.ForeignKey(

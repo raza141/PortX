@@ -1,116 +1,97 @@
+# operations/ibor/forms/trade_forms.py
+from __future__ import annotations
+
 from decimal import Decimal
 
 from django import forms
+from django.core.exceptions import ValidationError
 
-from operations.ibor.models.trade import IborTradeEvent, IborSide
+from operations.ibor.models.trade import IborTradeEvent
 
 
-class IborTradeForm(forms.ModelForm):
-    side = forms.ChoiceField(
-        choices=IborSide.choices,
-        widget=forms.Select(attrs={"class": "form-input"}),
-        required=True,
-        label="Action",
-    )
-
-    action = forms.ChoiceField(
-        choices=[
-            ("save", "Save only"),
-            ("book", "Save & Book"),
-        ],
-        initial="book",
-        widget=forms.HiddenInput(),
-        required=False,
-    )
-
-    fx_rate = forms.DecimalField(
-        required=False,
-        decimal_places=8,
-        max_digits=20,
-        initial=Decimal("1"),
-        label="FX rate",
-        help_text="Optional manual FX rate for reference.",
-    )
+class BaseTradeForm(forms.ModelForm):
+    """
+    Core economic trade fields.
+    All fields confirmed present on IborTradeEvent model.
+    """
 
     class Meta:
         model = IborTradeEvent
         fields = [
-            "source_system",
-            "external_ref",
             "portfolio",
             "account",
-            "broker",
-            "exec_venue",
             "instrument",
             "side",
             "quantity",
             "price",
-            "trade_ccy",
-            "settle_ccy",
             "trade_dt",
             "settle_dt",
-            "gross_amount",
-            "net_amount",
+            "trade_ccy",
+            "external_ref",
             "memo",
         ]
-        widgets = {
-            "source_system": forms.TextInput(attrs={"class": "form-input"}),
-            "external_ref": forms.TextInput(attrs={"class": "form-input"}),
-            "portfolio": forms.Select(attrs={"class": "form-input"}),
-            "account": forms.Select(attrs={"class": "form-input"}),
-            "broker": forms.Select(attrs={"class": "form-input"}),
-            "exec_venue": forms.Select(attrs={"class": "form-input"}),
-            "instrument": forms.Select(attrs={"class": "form-input"}),
-            "quantity": forms.NumberInput(attrs={"class": "form-input", "step": "0.0001"}),
-            "price": forms.NumberInput(attrs={"class": "form-input", "step": "0.0001"}),
-            "trade_ccy": forms.Select(attrs={"class": "form-input"}),
-            "settle_ccy": forms.Select(attrs={"class": "form-input"}),
-            "trade_dt": forms.DateInput(attrs={"type": "date", "class": "form-input"}),
-            "settle_dt": forms.DateInput(attrs={"type": "date", "class": "form-input"}),
-            "gross_amount": forms.NumberInput(attrs={"class": "form-input", "readonly": "readonly"}),
-            "net_amount": forms.NumberInput(attrs={"class": "form-input", "readonly": "readonly"}),
-            "memo": forms.Textarea(attrs={"rows": 3, "class": "form-input", "placeholder": "Optional notes / thesis..."}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["source_system"].initial = "manual"
-        self.fields["external_ref"].required = False
-        self.fields["broker"].required = False
-        self.fields["exec_venue"].required = False
-        self.fields["settle_ccy"].required = False
-        self.fields["gross_amount"].required = False
-        self.fields["net_amount"].required = False
-        self.fields["memo"].required = False
 
     def clean(self):
-        cleaned_data = super().clean()
-
-        side = cleaned_data.get("side")
-        quantity = cleaned_data.get("quantity")
-        price = cleaned_data.get("price")
-        trade_ccy = cleaned_data.get("trade_ccy")
-        settle_ccy = cleaned_data.get("settle_ccy")
-        trade_dt = cleaned_data.get("trade_dt")
-        settle_dt = cleaned_data.get("settle_dt")
-
-        if side not in {IborSide.BUY, IborSide.SELL}:
-            self.add_error("side", "Side must be BUY or SELL.")
-
-        if quantity is not None and quantity <= Decimal("0"):
-            self.add_error("quantity", "Quantity must be greater than 0.")
-
-        if price is not None and price <= Decimal("0"):
-            self.add_error("price", "Price must be greater than 0.")
+        cleaned = super().clean()
+        trade_dt  = cleaned.get("trade_dt")
+        settle_dt = cleaned.get("settle_dt")
+        quantity  = cleaned.get("quantity")
+        price     = cleaned.get("price")
 
         if trade_dt and settle_dt and settle_dt < trade_dt:
-            self.add_error("settle_dt", "Settlement date cannot be earlier than trade date.")
+            raise ValidationError("Settlement date cannot be before trade date.")
+        if quantity is not None and quantity <= 0:
+            raise ValidationError("Quantity must be greater than zero.")
+        if price is not None and price <= 0:
+            raise ValidationError("Price must be greater than zero.")
+        if not cleaned.get("trade_ccy"):
+            raise ValidationError("Trade currency is required.")
 
-        if quantity and price:
-            cleaned_data["gross_amount"] = quantity * price
+        return cleaned
 
-        if trade_ccy and not settle_ccy:
-            cleaned_data["settle_ccy"] = trade_ccy
 
-        return cleaned_data
+class IborTradeEntryForm(BaseTradeForm):
+    """
+    Full IBOR institutional trade ticket.
+    """
+
+    class Meta(BaseTradeForm.Meta):
+        fields = BaseTradeForm.Meta.fields + [
+            #"sleeve",   #later will implement
+            "broker",
+            "exec_venue",
+            #"custodian", Later will implement
+            "asset_class",
+            "asset_sub_class",
+            "source_system",
+            "trader_name",
+            "order_type",
+            "order_id",
+            "execution_id",
+            "settle_ccy",
+            "fx_override_rate",
+            "state_cd",
+            "book_sts_cd",
+            "imported_flag",
+            "manual_override",
+            "override_reason",
+        ]
+
+    def clean(self):
+        cleaned = super().clean()
+
+        if not cleaned.get("broker"):
+            raise ValidationError("Broker is required.")
+        if not cleaned.get("source_system"):
+            raise ValidationError("Source system is required.")
+
+        fx = cleaned.get("fx_override_rate")
+        if fx is not None and fx <= Decimal("0"):
+            raise ValidationError("FX override rate must be greater than zero.")
+
+        if cleaned.get("manual_override") and not (cleaned.get("override_reason") or "").strip():
+            raise ValidationError(
+                "Override reason is required when manual override is selected."
+            )
+
+        return cleaned
