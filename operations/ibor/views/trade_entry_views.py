@@ -61,8 +61,30 @@ class IborTradeCreateView(View):
             charge_formset.instance = trade
             charge_formset.save()
 
-            trade = TradeBookingService.derive_amounts(trade)
+            # ✅ ADD THIS NEW BLOCK HERE - Save auto-calculated charges
+            from operations.ibor.models.trade import IborChargeComponent
+            auto_count = int(request.POST.get('auto_charges_count', 0))
+            for idx in range(auto_count):
+                charge_type = request.POST.get(f'auto_charge_{idx}_type')
+                description = request.POST.get(f'auto_charge_{idx}_desc', '')
+                rate = request.POST.get(f'auto_charge_{idx}_rate') or None
+                amount = request.POST.get(f'auto_charge_{idx}_amount')
+                ccy_id = request.POST.get(f'auto_charge_{idx}_ccy') or None
 
+                if charge_type and amount:
+                    IborChargeComponent.objects.create(
+                        trade=trade,
+                        charge_type_cd=charge_type,
+                        description=description,
+                        rate=Decimal(rate) if rate else None,
+                        amount=Decimal(amount),
+                        cost_ccy_id=int(ccy_id) if ccy_id else None,
+                        override_flag=False,  # Auto-generated from fee engine
+                        source_reference=f'FEE_ENGINE_{idx}',
+                    )
+
+            # Continue with existing trade booking logic
+            trade = TradeBookingService.derive_amounts(trade)
             if action == "book":
                 result = TradeBookingService.book_trade(trade.id)
                 messages.success(

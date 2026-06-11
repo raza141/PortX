@@ -203,69 +203,431 @@
     </div>
 </section>
 
-<section class="card">
+{# ========== CHARGES SECTION - Bloomberg Style ========== #}
+{# ==================== CHARGES SECTION ==================== #}
+<section class="card" style="margin-top: 2rem;">
     <div class="card-header">
-        <h2 class="card-title">Charges</h2>
-        <div class="card-subtitle">Commission, levy, VAT/SST, stamp duty, withholding tax, and other trade-linked costs.</div>
+        <h3>Charges</h3>
+        <p class="hint">Auto-calculated charges from fee schedule plus manual reconciliation rows.</p>
     </div>
+
     <div class="card-body">
-        {% for cform in charge_formset %}
-        <div class="card" style="margin-bottom:14px;box-shadow:none;">
-            <div class="card-body" style="padding:16px 18px;">
-                {% for hidden in cform.hidden_fields %}{{ hidden }}{% endfor %}
-                <div class="form-grid">
-                    <div class="field">
-                        <label>{{ cform.charge_type_cd.label }}</l<label>
-                        {{ cform.charge_type_cd }}
-                        {% for e in cform.charge_type_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
-                    </div>
-                    <div class="field">
-                        <label>{{ cform.description.label }}</l<label>
-                        {{ cform.description }}
-                        {% for e in cform.description.errors %}<div class="errors">{{ e }}</div>{% endfor %}
-                    </div>
-                    <div class="field">
-                        <label>{{ cform.rate.label }}</l<label>
-                        {{ cform.rate }}
-                        {% for e in cform.rate.errors %}<div class="errors">{{ e }}</div>{% endfor %}
-                    </div>
-                    <div class="field">
-                        <label>{{ cform.amount.label }}</l<label>
-                        <input type="number" step="any"
-                               name="{{ cform.amount.html_name }}"
-                               id="{{ cform.amount.id_for_label }}"
-                               value="{{ cform.amount.value|default:'' }}"
-                               class="form-input charge-amount">
-                        {% for e in cform.amount.errors %}<div class="errors">{{ e }}</div>{% endfor %}
-                    </div>
-                    <div class="field">
-                        <label>{{ cform.cost_ccy.label }}</l<label>
-                        {{ cform.cost_ccy }}
-                        {% for e in cform.cost_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
-                    </div>
-                    <div class="field">
-                        <label>{{ cform.is_withholding.label }}</l<label>
-                        <div class="check-row">
-                            {{ cform.is_withholding }}
-                            <span class="hint">Withholding tax row.</span>
-                        </div>
-                        {% for e in cform.is_withholding.errors %}<div class="errors">{{ e }}</div>{% endfor %}
-                    </div>
-                    {% if cform.DELETE %}
-                    <div class="field">
-                        <label>Remove</l<label>
-                        <div class="check-row">
-                            {{ cform.DELETE }}
-                            <span class="hint">Mark row for deletion.</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
+        {# AUTO CHARGES - Read-only from Fee Engine #}
+        <div style="margin-bottom: 2rem;">
+            <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #475569;">
+                🔒 Auto Charges <span style="font-size: 0.875rem; font-weight: 400; color: #94a3b8;">(from fee schedule)</span>
+            </h4>
+            <div id="auto-charges-container" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1.5rem; min-height: 80px;">
+                <p id="auto-charges-placeholder" style="color: #94a3b8; font-size: 0.875rem; margin: 0;">
+                    💡 Enter trade details (quantity, price, side, broker, venue) to auto-calculate charges...
+                </p>
+                <div id="auto-charges-rows"></div>
             </div>
+            <div id="auto-charges-hidden"></div>
         </div>
-        {% endfor %}
+
+        {# MANUAL CHARGES - Editable Formset #}
+        <div>
+            <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #475569;">
+                ✏️ Manual / Reconciliation Charges
+            </h4>
+
+            {{ charge_formset.management_form }}
+
+            {% for cform in charge_formset %}
+                <div class="charge-row" style="display: grid; grid-template-columns: 1.5fr 2fr 1fr 1.5fr 1fr auto; gap: 1rem; align-items: end; margin-bottom: 1rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 6px;">
+
+                    <div class="form-field">
+                        abel for="{{ cform.charge_type_cd.id_for_label }}" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">
+                            Charge Type
+                        </label>
+                        {{ cform.charge_type_cd }}
+                    </div>
+
+                    <div class="form-field">
+                        abel for="{{ cform.description.id_for_label }}" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">
+                            Description
+                        </label>
+                        {{ cform.description }}
+                    </div>
+
+                    <div class="form-field">
+                        abel for="{{ cform.rate.id_for_label }}" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">
+                            Rate (%)
+                        </label>
+                        {{ cform.rate }}
+                    </div>
+
+                    <div class="form-field">
+                        abel for="{{ cform.amount.id_for_label }}" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">
+                            Amount
+                        </label>
+                        {{ cform.amount }}
+                    </div>
+
+                    <div class="form-field">
+                        abel for="{{ cform.cost_ccy.id_for_label }}" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">
+                            Ccy
+                        </label>
+                        {{ cform.cost_ccy }}
+                    </div>
+
+                    <div class="form-field" style="padding-bottom: 0.25rem;">
+                        {% if cform.DELETE %}
+                            abel style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; color: #ef4444;">
+                                {{ cform.DELETE }}
+                                <span>🗑️ Remove</span>
+                            </label>
+                        {% endif %}
+                    </div>
+
+                    {# Hidden fields #}
+                    <div style="display: none;">
+                        {{ cform.id }}
+                        {{ cform.override_flag }}
+                        {{ cform.is_withholding }}
+                        {{ cform.source_reference }}
+                    </div>
+                </div>
+            {% endfor %}
+
+            <button type="button" id="add-charge-row" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 6px; color: #64748b; font-size: 0.875rem; cursor: pointer;">
+                ➕ Add Another Manual Charge
+            </button>
+        </div>
     </div>
 </section>
+
+<style>
+.charge-row input[type="text"],
+.charge-row input[type="number"],
+.charge-row select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.charge-row input[type="text"]:focus,
+.charge-row input[type="number"]:focus,
+.charge-row select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.charge-row input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+</style>
+
+<script>
+// Fee Engine AJAX + UI updates
+(function() {
+    'use strict';
+
+    let autoChargesData = [];
+
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    async function fetchAutoCharges() {
+        const tradeDt = document.getElementById('id_trade_dt')?.value;
+        const quantity = document.getElementById('id_quantity')?.value;
+        const price = document.getElementById('id_price')?.value;
+        const side = document.getElementById('id_side')?.value;
+        const brokerId = document.getElementById('id_broker')?.value;
+        const execVenueId = document.getElementById('id_exec_venue')?.value;
+
+        if (!tradeDt || !quantity || !price || !side) {
+            document.getElementById('auto-charges-rows').innerHTML = '';
+            document.getElementById('auto-charges-placeholder').style.display = 'block';
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({
+                trade_dt: tradeDt,
+                quantity: quantity,
+                price: price,
+                side: side,
+            });
+            if (brokerId) params.append('broker_id', brokerId);
+            if (execVenueId) params.append('exec_venue_id', execVenueId);
+
+            const response = await fetch(`/ibor/fees/quote/?${params}`);
+            const data = await response.json();
+
+            if (data.message === 'OK' && data.charges && data.charges.length > 0) {
+                autoChargesData = data.charges;
+                renderAutoCharges(data);
+                updateTotals();
+            } else {
+                document.getElementById('auto-charges-rows').innerHTML =
+                    `<p style="color: #f59e0b; margin: 0;">⚠️ ${data.message || 'No fee schedule found'}</p>`;
+                document.getElementById('auto-charges-placeholder').style.display = 'none';
+            }
+        } catch (err) {
+            console.error('Fee engine error:', err);
+            document.getElementById('auto-charges-rows').innerHTML =
+                '<p style="color: #ef4444; margin: 0;">❌ Error fetching charges</p>';
+            document.getElementById('auto-charges-placeholder').style.display = 'none';
+        }
+    }
+
+    function renderAutoCharges(data) {
+        document.getElementById('auto-charges-placeholder').style.display = 'none';
+
+        let html = `
+            <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #cbd5e1;">
+                        <th style="text-align: left; padding: 0.5rem; font-size: 0.875rem; color: #64748b;">Description</th>
+                        <th style="text-align: right; padding: 0.5rem; font-size: 0.875rem; color: #64748b;">Rate</th>
+                        <th style="text-align: right; padding: 0.5rem; font-size: 0.875rem; color: #64748b;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        let hiddenHtml = '';
+
+        data.charges.forEach((charge, idx) => {
+            html += `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 0.75rem 0.5rem; font-size: 0.875rem;">${charge.description || charge.charge_type_cd}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: right; font-size: 0.875rem;">${charge.rate ? (parseFloat(charge.rate) * 100).toFixed(4) + '%' : '—'}</td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: right; font-size: 0.875rem; font-weight: 600;">${parseFloat(charge.amount).toFixed(4)}</td>
+                </tr>
+            `;
+
+            hiddenHtml += `
+                <input type="hidden" name="auto_charge_${idx}_type" value="${charge.charge_type_cd}">
+                <input type="hidden" name="auto_charge_${idx}_desc" value="${charge.description || ''}">
+                <input type="hidden" name="auto_charge_${idx}_rate" value="${charge.rate || ''}">
+                <input type="hidden" name="auto_charge_${idx}_amount" value="${charge.amount}">
+                <input type="hidden" name="auto_charge_${idx}_ccy" value="${charge.cost_ccy_id || ''}">
+            `;
+        });
+
+        html += `
+                </tbody>
+                <tfoot>
+                    <tr style="border-top: 2px solid #cbd5e1;">
+                        <td colspan="2" style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600; font-size: 0.875rem;">Total Auto Charges:</td>
+                        <td style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 700; font-size: 0.875rem; color: #0f172a;">${parseFloat(data.total_charges).toFixed(4)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
+
+        document.getElementById('auto-charges-rows').innerHTML = html;
+        document.getElementById('auto-charges-hidden').innerHTML = hiddenHtml + `<input type="hidden" name="auto_charges_count" value="${data.charges.length}">`;
+    }
+
+    function updateTotals() {
+        const quantity = parseFloat(document.getElementById('id_quantity')?.value) || 0;
+        const price = parseFloat(document.getElementById('id_price')?.value) || 0;
+        const side = document.getElementById('id_side')?.value || 'BUY';
+
+        const gross = quantity * price;
+        let autoTotal = 0;
+        autoChargesData.forEach(c => autoTotal += parseFloat(c.amount) || 0);
+
+        let manualTotal = 0;
+        document.querySelectorAll('.charge-row input[name*="-amount"]').forEach(input => {
+            manualTotal += parseFloat(input.value) || 0;
+        });
+
+        const totalCharges = autoTotal + manualTotal;
+        const net = side === 'BUY' ? gross + totalCharges : gross - totalCharges;
+
+        const tickerGross = document.getElementById('ticker-gross');
+        const tickerCharges = document.getElementById('ticker-charges');
+        const tickerNet = document.getElementById('ticker-net');
+
+        if (tickerGross) tickerGross.textContent = gross.toFixed(2);
+        if (tickerCharges) tickerCharges.textContent = totalCharges.toFixed(4);
+        if (tickerNet) tickerNet.textContent = net.toFixed(2);
+
+        const netField = document.getElementById('id_net_amount');
+        if (netField) netField.value = net.toFixed(4);
+    }
+
+    const debouncedFetch = debounce(fetchAutoCharges, 500);
+
+    ['id_trade_dt', 'id_quantity', 'id_price', 'id_side', 'id_broker', 'id_exec_venue'].forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', debouncedFetch);
+            field.addEventListener('change', debouncedFetch);
+        }
+    });
+
+    document.querySelectorAll('.charge-row input[name*="-amount"]').forEach(input => {
+        input.addEventListener('input', updateTotals);
+    });
+
+    fetchAutoCharges();
+})();
+</script>
+
+{# ========== JAVASCRIPT: Fee Engine AJAX + UI Update ========== #}
+<script>
+(function() {
+    'use strict';
+
+    let autoChargesData = [];  // Store fetched auto-charges
+
+    // Debounce helper
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    // Fetch auto-charges from fee engine
+    async function fetchAutoCharges() {
+        const tradeDt = document.getElementById('id_trade_dt')?.value;
+        const quantity = document.getElementById('id_quantity')?.value;
+        const price = document.getElementById('id_price')?.value;
+        const side = document.getElementById('id_side')?.value;
+        const brokerId = document.getElementById('id_broker')?.value;
+        const execVenueId = document.getElementById('id_exec_venue')?.value;
+
+        // Need minimum fields
+        if (!tradeDt || !quantity || !price || !side) {
+            document.getElementById('auto-charges-placeholder').textContent =
+                'Enter trade details (quantity, price, side, broker, venue) to auto-calculate charges...';
+            document.getElementById('auto-charges-rows').innerHTML =
+                '<p id="auto-charges-placeholder" style="color: #94a3b8; font-size: 0.875rem;">Enter trade details to auto-calculate charges...</p>';
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({
+                trade_dt: tradeDt,
+                quantity: quantity,
+                price: price,
+                side: side,
+            });
+            if (brokerId) params.append('broker_id', brokerId);
+            if (execVenueId) params.append('exec_venue_id', execVenueId);
+
+            const response = await fetch(`/ibor/fees/quote/?${params}`);
+            const data = await response.json();
+
+            if (data.message === 'OK' && data.charges && data.charges.length > 0) {
+                autoChargesData = data.charges;
+                renderAutoCharges(data);
+                updateTotals();
+            } else {
+                document.getElementById('auto-charges-rows').innerHTML =
+                    '<p style="color: #f59e0b; font-size: 0.875rem;">⚠️ ' + (data.message || 'No fee schedule found') + '</p>';
+                autoChargesData = [];
+            }
+        } catch (err) {
+            console.error('Fee engine error:', err);
+            document.getElementById('auto-charges-rows').innerHTML =
+                '<p style="color: #ef4444; font-size: 0.875rem;">❌ Error fetching charges</p>';
+        }
+    }
+
+    // Render auto-charge rows (read-only display)
+    function renderAutoCharges(data) {
+        const container = document.getElementById('auto-charges-rows');
+        const hiddenContainer = document.getElementById('auto-charges-hidden-inputs');
+
+        let html = '<div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; font-size: 0.875rem;">';
+        html += '<div style="font-weight: 600; color: #64748b;">Description</div>';
+        html += '<div style="font-weight: 600; color: #64748b; text-align: right;">Rate</div>';
+        html += '<div style="font-weight: 600; color: #64748b; text-align: right;">Amount</div>';
+
+        let hiddenHtml = '';
+
+        data.charges.forEach((charge, idx) => {
+            html += `<div style="padding: 0.5rem 0; border-top: 1px solid #e2e8f0;">${charge.description || charge.charge_type_cd}</div>`;
+            html += `<div style="padding: 0.5rem 0; border-top: 1px solid #e2e8f0; text-align: right;">${charge.rate ? (parseFloat(charge.rate) * 100).toFixed(4) + '%' : '—'}</div>`;
+            html += `<div style="padding: 0.5rem 0; border-top: 1px solid #e2e8f0; text-align: right; font-weight: 600;">${parseFloat(charge.amount).toFixed(4)}</div>`;
+
+            // Hidden inputs for POST submission
+            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_type" value="${charge.charge_type_cd}">`;
+            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_desc" value="${charge.description || ''}">`;
+            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_rate" value="${charge.rate || ''}">`;
+            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_amount" value="${charge.amount}">`;
+            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_ccy" value="${charge.cost_ccy_id || ''}">`;
+        });
+
+        html += '</div>';
+        html += `<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 2px solid #cbd5e1; font-weight: 600; text-align: right;">
+                    Total: ${parseFloat(data.total_charges).toFixed(4)}
+                 </div>`;
+
+        container.innerHTML = html;
+        hiddenContainer.innerHTML = hiddenHtml + `<input type="hidden" name="auto_charges_count" value="${data.charges.length}">`;
+    }
+
+    // Update ticker stats (Gross, Charges, Net)
+    function updateTotals() {
+        const quantity = parseFloat(document.getElementById('id_quantity')?.value) || 0;
+        const price = parseFloat(document.getElementById('id_price')?.value) || 0;
+        const side = document.getElementById('id_side')?.value || 'BUY';
+
+        const gross = quantity * price;
+
+        // Sum auto charges
+        let autoTotal = 0;
+        autoChargesData.forEach(c => autoTotal += parseFloat(c.amount) || 0);
+
+        // Sum manual charges
+        let manualTotal = 0;
+        document.querySelectorAll('.charge-form-row input[name$="-amount"]').forEach(input => {
+            manualTotal += parseFloat(input.value) || 0;
+        });
+
+        const totalCharges = autoTotal + manualTotal;
+        const net = side === 'BUY' ? gross + totalCharges : gross - totalCharges;
+
+        // Update ticker
+        document.getElementById('ticker-gross').textContent = gross.toFixed(2);
+        document.getElementById('ticker-charges').textContent = totalCharges.toFixed(4);
+        document.getElementById('ticker-net').textContent = net.toFixed(2);
+
+        // Update hidden net field
+        const netField = document.getElementById('id_net_amount');
+        if (netField) netField.value = net.toFixed(4);
+    }
+
+    // Attach listeners
+    const debouncedFetch = debounce(fetchAutoCharges, 500);
+
+    ['id_trade_dt', 'id_quantity', 'id_price', 'id_side', 'id_broker', 'id_exec_venue'].forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', debouncedFetch);
+            field.addEventListener('change', debouncedFetch);
+        }
+    });
+
+    // Manual charge rows update totals
+    document.querySelectorAll('.charge-form-row input[name$="-amount"]').forEach(input => {
+        input.addEventListener('input', updateTotals);
+    });
+
+    // Initial call
+    fetchAutoCharges();
+})();
+</script>
 
 {% endblock %}
 
