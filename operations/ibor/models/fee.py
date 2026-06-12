@@ -86,7 +86,7 @@ class IborFeeSchedule(IborTimeStampedModel):
     )
 
     side = models.CharField(
-        max_length=4,
+        max_length=10,
         choices=IborSide.choices,
         blank=True,
         default="",

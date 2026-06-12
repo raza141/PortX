@@ -137,7 +137,7 @@ class IborTradeEvent(IborTimeStampedModel):
     )
 
     side = models.CharField(
-        max_length=120,
+        max_length=10,
         choices=IborSide.choices,
         help_text="BUY, SELL or Short-Sell",
     )
