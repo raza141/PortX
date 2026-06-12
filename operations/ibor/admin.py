@@ -8,6 +8,10 @@ from operations.ibor.models.position_lot import PositionLot
 from operations.ibor.models.market import IborPriceSnapshot, IborFxOverride
 from operations.ibor.models.lot import IborTaxLot, IborLotConsumption
 from operations.ibor.models.fee import IborFeeRule, IborFeeSchedule
+from .ADMIN_FEE_SCHEDULE_CONFIG import (
+    IborFeeScheduleAdmin,
+    IborTradeEventAdmin
+)
 
 
 admin.site.register(IborCashEvent)
