@@ -769,5 +769,124 @@
     syncSettleCcy();
     update();
 }());
+
+    // Fee Schedule Auto-Population Module
+(function() {
+    'use strict';
+    
+    // Get form field elements
+    const brokerField = document.getElementById('id_broker');
+    const exchangeField = document.getElementById('id_exec_venue');
+    const assetClassField = document.getElementById('id_asset_class');
+    const currencyField = document.getElementById('id_trade_ccy');
+    const sharePriceField = document.getElementById('id_price');
+    const tradeDateField = document.getElementById('id_trade_dt');
+    const sideField = document.getElementById('id_side');
+    
+    if (!brokerField || !exchangeField) {
+        console.log('Fee auto-population: Required fields not found');
+        return;
+    }
+    
+    // Function to fetch and populate fee rules
+    function fetchAndPopulateFeeRules() {
+        const brokerId = brokerField.value;
+        const exchangeId = exchangeField.value;
+        const assetClassId = assetClassField ? assetClassField.value : '';
+        const currencyId = currencyField ? currencyField.value : '';
+        const sharePrice = sharePriceField ? sharePriceField.value : '';
+        const tradeDate = tradeDateField ? tradeDateField.value : '';
+        const side = sideField ? sideField.value : '';
+        
+        // Check if we have minimum required fields
+        if (!brokerId || !exchangeId) {
+            console.log('Fee auto-population: Broker and Exchange required');
+            return;
+        }
+        
+        // Build query parameters
+        const params = new URLSearchParams();
+        params.append('broker_id', brokerId);
+        params.append('exec_venue_id', exchangeId);
+        if (assetClassId) params.append('asset_class_id', assetClassId);
+        if (currencyId) params.append('trade_ccy_id', currencyId);
+        if (sharePrice) params.append('share_price', sharePrice);
+        if (tradeDate) params.append('trade_dt', tradeDate);
+        if (side) params.append('side', side);
+        params.append('source_system', 'IBOR');
+        
+        // Make AJAX call
+        fetch('/ibor/fees/schedule-rules/?' + params.toString())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.fee_rules && data.fee_rules.length > 0) {
+                    populateFeeRules(data.fee_rules);
+                    console.log('Fee auto-population: Loaded ' + data.count + ' fee rules');
+                } else {
+                    console.log('Fee auto-population: No fee rules found');
+                }
+            })
+            .catch(error => {
+                console.error('Fee auto-population error:', error);
+            });
+    }
+    
+    // Function to populate fee rules into the formset
+    function populateFeeRules(feeRules) {
+        // Find the charge formset container
+        const chargeFormset = document.querySelector('.charge-formset, #charge-formset, [data-formset="charges"]');
+        
+        if (!chargeFormset) {
+            console.error('Fee auto-population: Charge formset not found');
+            return;
+        }
+        
+        feeRules.forEach((rule, index) => {
+            // Try to find existing form row or add a new one
+            let formRow = chargeFormset.querySelector('[data-form-index="' + index + '"]');
+            
+            if (!formRow) {
+                // Look for empty forms or create mechanism to add forms
+                const allForms = chargeFormset.querySelectorAll('.charge-form-row, [class*="charge"][class*="form"]');
+                formRow = allForms[index];
+            }
+            
+            if (formRow) {
+                // Populate the form fields
+                const chargeTypeField = formRow.querySelector('[name*="charge_type"], #id_charges-' + index + '-charge_type');
+                const descriptionField = formRow.querySelector('[name*="description"], #id_charges-' + index + '-description');
+                const calcMethodField = formRow.querySelector('[name*="calc_method"], #id_charges-' + index + '-calc_method');
+                const rateField = formRow.querySelector('[name*="rate"], #id_charges-' + index + '-rate');
+                
+                if (chargeTypeField && rule.charge_type_cd) {
+                    chargeTypeField.value = rule.charge_type_cd;
+                }
+                if (descriptionField && rule.description) {
+                    descriptionField.value = rule.description;
+                }
+                if (calcMethodField && rule.calc_method) {
+                    calcMethodField.value = rule.calc_method;
+                }
+                if (rateField && rule.rate) {
+                    rateField.value = rule.rate;
+                }
+            }
+        });
+    }
+    
+    // Attach event listeners
+    if (brokerField) brokerField.addEventListener('change', fetchAndPopulateFeeRules);
+    if (exchangeField) exchangeField.addEventListener('change', fetchAndPopulateFeeRules);
+    if (assetClassField) assetClassField.addEventListener('change', fetchAndPopulateFeeRules);
+    if (currencyField) currencyField.addEventListener('change', fetchAndPopulateFeeRules);
+    if (sharePriceField) sharePriceField.addEventListener('blur', fetchAndPopulateFeeRules);
+    
+    console.log('Fee Schedule Auto-Population Module initialized');
+})();
 </script>
 {% endblock %}
