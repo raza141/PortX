@@ -8,12 +8,12 @@ This file provides clean admin interfaces with:
 """
 
 from django.contrib import admin
-from operations.ibor.models.fee_models import IborFeeSchedule, IborFeeRule
-from operations.ibor.models.trade import IborTradeEvent, IborChargeComponent
+from operations.ibor.models.fee import IborFeeSchedule, IborFeeRulefrom operations.ibor.models.trade import IborTradeEvent, IborChargeComponent
 
 
 # ============================================================================
 # FEE SCHEDULE ADMIN
+from operations.ibor.models.trade import IborTradeEvent, IborChargeComponent
 # ============================================================================
 
 class IborFeeRuleInline(admin.TabularInline):
