@@ -130,12 +130,12 @@
                 {% for e in form.settle_dt.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <label>Gross amount</l<label>
+                <label>Gross amount</label>
                 <input type="text" id="id_gross_amount" class="form-input" readonly placeholder="Auto-calculated">
                 <div class="hint">quantity × price (before charges).</div>
             </div>
             <div class="field">
-                <label>Net amount</l<label>
+                <label>Net amount</label>
                 <input type="text" id="id_net_amount" class="form-input" readonly placeholder="Auto-calculated">
                 <div class="hint">Gross ± total charges.</div>
             </div>
@@ -168,17 +168,17 @@
     <div class="card-body">
         <div class="form-grid">
             <div class="field">
-                <l<label for="{{ form.state_cd.id_for_label }}">Event state</l<label>
+                <label for="{{ form.state_cd.id_for_label }}">Event state<<label>
                 {{ form.state_cd }}
                 {% for e in form.state_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.book_sts_cd.id_for_label }}">Booking status</l<label>
+                <label for="{{ form.book_sts_cd.id_for_label }}">Booking status</label>
                 {{ form.book_sts_cd }}
                 {% for e in form.book_sts_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <label>Manual override</l<label>
+                <label>Manual override</label>
                 <div class="check-row">
                     {{ form.manual_override }}
                     <span class="hint">Check if any economics were manually changed.</span>
@@ -186,7 +186,7 @@
                 {% for e in form.manual_override.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <label>Imported</l<label>
+                <label>Imported</label>
                 <div class="check-row">
                     {{ form.imported_flag }}
                     <span class="hint">Check if loaded from file or broker feed.</span>
@@ -194,7 +194,7 @@
                 {% for e in form.imported_flag.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field full">
-                <l<label for="{{ form.override_reason.id_for_label }}">Override reason</l<label>
+                <label for="{{ form.override_reason.id_for_label }}">Override reason</label>
                 {{ form.override_reason }}
                 <div class="hint">Required when manual override is checked.</div>
                 {% for e in form.override_reason.errors %}<div class="errors">{{ e }}</div>{% endfor %}
