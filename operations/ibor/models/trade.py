@@ -12,14 +12,27 @@ from .common import IborTimeStampedModel, IborState
 class IborSide(models.TextChoices):
     BUY = "BUY", "Buy"
     SELL = "SELL", "Sell"
+    SHORT_SELL = "SHORT_SELL", "Short Sell"
 
+class IborOrderType(models.TextChoices):
+    MARKET = "MARKET", "Market Order"
+    LIMIT = "LIMIT", "Limit Order"
+    STOP = "STOP", "Stop Order"
+    STOP_LIMIT = "STOP_LIMIT", "Stop-Limit Order"
+    MARKET_TO_LIMIT = "MTL", "Market to Limit"  # PSX specific
+
+# # this need to implement
+# class MarketSegment(models.TextChoices):
+#     READY = "READY", "Ready/Regular Market"
+#     FUTURE = "FUTURE", "Deliverable Future (DFC)"
+#     ODD_LOT = "ODD_LOT", "Odd Lot Market"
+#     REIT = "REIT", "REIT"
 
 class IborBookStatus(models.TextChoices):
     NEW = "NEW", "New"
     BOOKED = "BOK", "Booked"
     ERROR = "ERR", "Error"
     REVERSED = "REV", "Reversed"
-
 
 class IborChargeType(models.TextChoices):
     """
@@ -31,6 +44,8 @@ class IborChargeType(models.TextChoices):
     VAT = "VAT", "VAT/GST/SST"
     STAMP = "STAMP", "Stamp duty"
     OTHER = "OTHER", "Other"
+
+
 
 
 class IborTradeEvent(IborTimeStampedModel):
@@ -122,10 +137,11 @@ class IborTradeEvent(IborTimeStampedModel):
     )
 
     side = models.CharField(
-        max_length=4,
+        max_length=120,
         choices=IborSide.choices,
-        help_text="BUY or SELL.",
+        help_text="BUY, SELL or Short-Sell",
     )
+
     quantity = models.DecimalField(
         max_digits=28,
         decimal_places=10,
@@ -163,10 +179,11 @@ class IborTradeEvent(IborTimeStampedModel):
 
     # Front‑office / execution context
     order_type = models.CharField(
-        max_length=30,
+        max_length=120,
+        choices=IborOrderType.choices,  # ← Add this
         blank=True,
         default="",
-        help_text="Order type (e.g. Market, Limit).",
+        help_text="Order type (e.g. MKT, MLT etc).",
     )
     order_id = models.CharField(
         max_length=120,
