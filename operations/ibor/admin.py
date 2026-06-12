@@ -16,7 +16,7 @@ from .ADMIN_FEE_SCHEDULE_CONFIG import (
 
 admin.site.register(IborCashEvent)
 admin.site.register(PositionLot)
-admin.site.register(IborTradeEvent)
+# admin.site.register(IborTradeEvent)
 admin.site.register(IborFxOverride)
 admin.site.register(IborPriceSnapshot)
 admin.site.register(IborTaxLot)
