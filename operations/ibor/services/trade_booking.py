@@ -4,6 +4,7 @@ from __future__ import annotations
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import transaction
+from operations.ibor.services.position_engine import PositionEngine
 
 from operations.ibor.models.trade import (
     IborChargeComponent,

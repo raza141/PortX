@@ -71,7 +71,7 @@ def _to_int(value):
     return int(value)
 
 
-    @require_GET
+@require_GET
 def get_fee_schedule_rules_api(request):
     """
     API endpoint to fetch fee rules for auto-populating charges in trade form.

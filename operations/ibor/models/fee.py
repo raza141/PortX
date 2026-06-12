@@ -1,3 +1,7 @@
+# operations/ibor/models/fee
+
+
+
 from __future__ import annotations
 
 from django.db import models
@@ -11,6 +15,7 @@ class IborFeeCalcMethod(models.TextChoices):
     FLAT = "FLAT", "Flat amount"
     PER_UNIT = "PER_UNIT", "Per unit"
     PCT_OF_CHARGE = "PCT_OF_CHARGE", "Percent of another charge"
+    PCT_CUMULATIVE = 'PCT_CUMUL', 'Percent of cumulative charges'
     MIN_OF_PCT_OR_FLAT = "MIN_OF_PCT_OR_FLAT", "Minimum of percent or flat"
     MAX_OF_PCT_OR_FLAT = "MAX_OF_PCT_OR_FLAT", "Maximum of percent or flat"
 
