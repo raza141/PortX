@@ -34,41 +34,41 @@
     <div class="card-body">
         <div class="form-grid">
             <div class="field">
-                <l<label for="{{ form.source_system.id_for_label }}">Source system</l<label>
+                <label for="{{ form.source_system.id_for_label }}">Source system</label>
                 {{ form.source_system }}
                 <div class="hint"> Where the Record came .</div>
                 {% for e in form.source_system.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.external_ref.id_for_label }}">External reference</l<label>
+                <label for="{{ form.external_ref.id_for_label }}">External reference</label>
                 {{ form.external_ref }}
                 <div class="hint">Broker contract note / voucher number.</div>
                 {% for e in form.external_ref.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.portfolio.id_for_label }}">Portfolio</l<label>
+                <label for="{{ form.portfolio.id_for_label }}">Portfolio</label>
                 {{ form.portfolio }}
                 <div class="hint">Portfolio for trader allocation .</div>
                 {% for e in form.portfolio.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.account.id_for_label }}">Account</l<label>
+                <label for="{{ form.account.id_for_label }}">Account</label>
                 {{ form.account }}
                 <div class="hint">Account for trader settlement .</div>
                 {% for e in form.account.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.broker.id_for_label }}">Broker</l<label>
+                <label for="{{ form.broker.id_for_label }}">Broker</label>
                 {{ form.broker }}
                 {% for e in form.broker.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.exec_venue.id_for_label }}">Exchange / venue</l<label>
+                <label for="{{ form.exec_venue.id_for_label }}">Exchange / venue</label>
                 {{ form.exec_venue }}
                 {% for e in form.exec_venue.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.trader.id_for_label }}">Trader / entered by</l<label>
+                <label for="{{ form.trader.id_for_label }}">Trader / entered by</label>
                 {{ form.trader }}
                 {% for e in form.trader.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
@@ -84,48 +84,48 @@
     <div class="card-body">
         <div class="form-grid">
             <div class="field full">
-                <l<label for="{{ form.instrument.id_for_label }}">Instrument</l<label>
+                <label for="{{ form.instrument.id_for_label }}">Instrument</label>
                 {{ form.instrument }}
                 {% for e in form.instrument.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.side.id_for_label }}">Side / action</l<label>
+                <label for="{{ form.side.id_for_label }}">Side / action</label>
                 {{ form.side }}
                 {% for e in form.side.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.order_type.id_for_label }}">Order type</l<label>
+                <label for="{{ form.order_type.id_for_label }}">Order type</label>
                 {{ form.order_type }}
                 {% for e in form.order_type.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.quantity.id_for_label }}">Quantity / volume</l<label>
+                <label for="{{ form.quantity.id_for_label }}">Quantity / volume</label>
                 {{ form.quantity }}
                 {% for e in form.quantity.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.price.id_for_label }}">Price per unit</l<label>
+                <label for="{{ form.price.id_for_label }}">Price per unit</label>
                 {{ form.price }}
                 {% for e in form.price.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.trade_ccy.id_for_label }}">Trade currency</l<label>
+                <label for="{{ form.trade_ccy.id_for_label }}">Trade currency</label>
                 {{ form.trade_ccy }}
                 {% for e in form.trade_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.settle_ccy.id_for_label }}">Settlement currency</l<label>
+                <label for="{{ form.settle_ccy.id_for_label }}">Settlement currency</label>
                 {{ form.settle_ccy }}
                 <div class="hint">Defaults to trade currency if blank.</div>
                 {% for e in form.settle_ccy.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.trade_dt.id_for_label }}">Trade date</l<label>
+                <label for="{{ form.trade_dt.id_for_label }}">Trade date</label>
                 {{ form.trade_dt }}
                 {% for e in form.trade_dt.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.settle_dt.id_for_label }}">Settlement date</l<label>
+                <label for="{{ form.settle_dt.id_for_label }}">Settlement date</label>
                 {{ form.settle_dt }}
                 {% for e in form.settle_dt.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
@@ -140,19 +140,19 @@
                 <div class="hint">Gross ± total charges.</div>
             </div>
             <div class="field">
-                <l<label for="{{ form.fx_override_rate.id_for_label }}">FX override rate</l<label>
+                <label for="{{ form.fx_override_rate.id_for_label }}">FX override rate</label>
                 {{ form.fx_override_rate }}
                 <div class="hint">{{ form.fx_override_rate.help_text }}</div>
                 {% for e in form.fx_override_rate.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <l<label for="{{ form.order_id.id_for_label }}">Order ID</l<label>
+                <label for="{{ form.order_id.id_for_label }}">Order ID</label>
                 {{ form.order_id }}
                 <div class="hint">OMS order reference (optional).</div>
                 {% for e in form.order_id.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field full">
-                <l<label for="{{ form.memo.id_for_label }}">Thesis / memo</l<label>
+                <label for="{{ form.memo.id_for_label }}">Thesis / memo</label>
                 {{ form.memo }}
                 {% for e in form.memo.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
