@@ -168,7 +168,7 @@
     <div class="card-body">
         <div class="form-grid">
             <div class="field">
-                <label for="{{ form.state_cd.id_for_label }}">Event state<label>
+                <label for="{{ form.state_cd.id_for_label }}">Event state</label>
                 {{ form.state_cd }}
                 {% for e in form.state_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
@@ -178,18 +178,22 @@
                 {% for e in form.book_sts_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <label>Manual override</label>
-                <div class="check-row">
-                    {{ form.manual_override }}
-                    <span class="hint">Check if any economics were manually changed.</span>
+                <div class="checkbox-container">
+                    <label for="{{ form.manual_override.id_for_label }}" class="checkbox-label">
+                        {{ form.manual_override }}
+                        <span class="checkbox-text">Manual override</span>
+                    </label>
+                    <div class="hint">Check if any economics were manually changed.</div>
                 </div>
                 {% for e in form.manual_override.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
             <div class="field">
-                <label>Imported</label>
-                <div class="check-row">
-                    {{ form.imported_flag }}
-                    <span class="hint">Check if loaded from file or broker feed.</span>
+                <div class="checkbox-container">
+                    <label for="{{ form.imported_flag.id_for_label }}" class="checkbox-label">
+                        {{ form.imported_flag }}
+                        <span class="checkbox-text">Imported</span>
+                    </label>
+                    <div class="hint">Check if loaded from file or broker feed.</div>
                 </div>
                 {% for e in form.imported_flag.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
@@ -291,7 +295,7 @@
                 </div>
             {% endfor %}
 
-            <button type="button" id="add-charge-row" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 6px; color: #64748b; font-size: 0.875rem; cursor: pointer;">
+            <button type="button" id="add-charge-row" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 6px; color: #64748b; font-size: 0.875rem; cursor: pointer; font-weight: 500; transition: all 0.2s ease;">
                 ➕ Add Another Manual Charge
             </button>
         </div>
@@ -322,10 +326,167 @@
     height: 1rem;
     cursor: pointer;
 }
+
+#add-charge-row:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #475569;
+}
+
+#add-charge-row:active {
+    transform: scale(0.98);
+}
+
+/* Checkbox styling */
+.checkbox-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-weight: 500;
+    color: #1f2937;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    min-width: 1.125rem;
+    min-height: 1.125rem;
+    cursor: pointer;
+    accent-color: #3b82f6;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.checkbox-label input[type="checkbox"]:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.checkbox-text {
+    font-size: 0.9375rem;
+    color: #1f2937;
+}
+
+.checkbox-container .hint {
+    margin-top: -0.25rem;
+    margin-left: 2rem;
+}
 </style>
 
 <script>
-// Fee Engine AJAX + UI updates
+// Formset Management - Add new charge rows
+(function() {
+    'use strict';
+
+    const FORMSET_PREFIX = 'charges';
+    const formsetContainer = document.querySelector('[id$="charge-formset-container"], .charge-row').parentElement;
+    const addButton = document.getElementById('add-charge-row');
+    const formsetForm = document.querySelector(`[name^="${FORMSET_PREFIX}-TOTAL_FORMS"]`);
+
+    if (!formsetContainer || !addButton || !formsetForm) {
+        console.warn('Formset management: Required elements not found');
+        return;
+    }
+
+    addButton.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        // Get current form count
+        const totalForms = formsetForm;
+        const formIdx = parseInt(totalForms.value) || 0;
+
+        // Clone the last form (without clearing values) or create new
+        const existingForms = formsetContainer.querySelectorAll('.charge-row');
+        let newForm;
+
+        if (existingForms.length > 0) {
+            const lastForm = existingForms[existingForms.length - 1];
+            newForm = lastForm.cloneNode(true);
+
+            // Clear input values in cloned form
+            newForm.querySelectorAll('input[type="text"], input[type="number"], select').forEach(field => {
+                if (!field.name.includes('DELETE')) {
+                    field.value = '';
+                }
+            });
+
+            // Update field names and IDs to new index
+            newForm.querySelectorAll('[name], [for], [id]').forEach(elem => {
+                if (elem.name) {
+                    elem.name = elem.name.replace(/-\d+-/, `-${formIdx}-`);
+                }
+                if (elem.id) {
+                    elem.id = elem.id.replace(/_\d+_/, `_${formIdx}_`);
+                }
+                if (elem.getAttribute('for')) {
+                    elem.setAttribute('for', elem.getAttribute('for').replace(/_\d+_/, `_${formIdx}_`));
+                }
+            });
+        } else {
+            // Fallback: create minimal form row
+            newForm = document.createElement('div');
+            newForm.className = 'charge-row';
+            newForm.style.cssText = 'display: grid; grid-template-columns: 1.5fr 2fr 1fr 1.5fr 1fr auto; gap: 1rem; align-items: end; margin-bottom: 1rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 6px;';
+            newForm.innerHTML = `
+                <div class="form-field">
+                    <label for="id_${FORMSET_PREFIX}-${formIdx}-charge_type_cd" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Charge Type</label>
+                    <select name="${FORMSET_PREFIX}-${formIdx}-charge_type_cd" id="id_${FORMSET_PREFIX}-${formIdx}-charge_type_cd"></select>
+                </div>
+                <div class="form-field">
+                    <label for="id_${FORMSET_PREFIX}-${formIdx}-description" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Description</label>
+                    <input type="text" name="${FORMSET_PREFIX}-${formIdx}-description" id="id_${FORMSET_PREFIX}-${formIdx}-description">
+                </div>
+                <div class="form-field">
+                    <label for="id_${FORMSET_PREFIX}-${formIdx}-rate" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Rate (%)</label>
+                    <input type="number" name="${FORMSET_PREFIX}-${formIdx}-rate" id="id_${FORMSET_PREFIX}-${formIdx}-rate" step="0.0001">
+                </div>
+                <div class="form-field">
+                    <label for="id_${FORMSET_PREFIX}-${formIdx}-amount" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Amount</label>
+                    <input type="number" name="${FORMSET_PREFIX}-${formIdx}-amount" id="id_${FORMSET_PREFIX}-${formIdx}-amount" step="0.0001" class="charge-amount">
+                </div>
+                <div class="form-field">
+                    <label for="id_${FORMSET_PREFIX}-${formIdx}-cost_ccy" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Ccy</label>
+                    <select name="${FORMSET_PREFIX}-${formIdx}-cost_ccy" id="id_${FORMSET_PREFIX}-${formIdx}-cost_ccy"></select>
+                </div>
+                <div class="form-field" style="padding-bottom: 0.25rem;">
+                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; color: #ef4444;">
+                        <input type="checkbox" name="${FORMSET_PREFIX}-${formIdx}-DELETE">
+                        <span>🗑️ Remove</span>
+                    </label>
+                </div>
+                <div style="display: none;">
+                    <input type="hidden" name="${FORMSET_PREFIX}-${formIdx}-id">
+                </div>
+            `;
+        }
+
+        // Insert before button
+        formsetContainer.insertBefore(newForm, addButton);
+
+        // Update TOTAL_FORMS
+        totalForms.value = formIdx + 1;
+
+        console.log(`Added new charge form ${formIdx}. Total forms: ${totalForms.value}`);
+    });
+})();
+</script>
+
+{# Fee Engine AJAX + UI updates #}
+<script>
 (function() {
     'use strict';
 
@@ -480,155 +641,6 @@
 })();
 </script>
 
-{# ========== JAVASCRIPT: Fee Engine AJAX + UI Update ========== #}
-<script>
-(function() {
-    'use strict';
-
-    let autoChargesData = [];  // Store fetched auto-charges
-
-    // Debounce helper
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
-
-    // Fetch auto-charges from fee engine
-    async function fetchAutoCharges() {
-        const tradeDt = document.getElementById('id_trade_dt')?.value;
-        const quantity = document.getElementById('id_quantity')?.value;
-        const price = document.getElementById('id_price')?.value;
-        const side = document.getElementById('id_side')?.value;
-        const brokerId = document.getElementById('id_broker')?.value;
-        const execVenueId = document.getElementById('id_exec_venue')?.value;
-
-        // Need minimum fields
-        if (!tradeDt || !quantity || !price || !side) {
-            document.getElementById('auto-charges-placeholder').textContent =
-                'Enter trade details (quantity, price, side, broker, venue) to auto-calculate charges...';
-            document.getElementById('auto-charges-rows').innerHTML =
-                '<p id="auto-charges-placeholder" style="color: #94a3b8; font-size: 0.875rem;">Enter trade details to auto-calculate charges...</p>';
-            return;
-        }
-
-        try {
-            const params = new URLSearchParams({
-                trade_dt: tradeDt,
-                quantity: quantity,
-                price: price,
-                side: side,
-            });
-            if (brokerId) params.append('broker_id', brokerId);
-            if (execVenueId) params.append('exec_venue_id', execVenueId);
-
-            const response = await fetch(`/ibor/fees/quote/?${params}`);
-            const data = await response.json();
-
-            if (data.message === 'OK' && data.charges && data.charges.length > 0) {
-                autoChargesData = data.charges;
-                renderAutoCharges(data);
-                updateTotals();
-            } else {
-                document.getElementById('auto-charges-rows').innerHTML =
-                    '<p style="color: #f59e0b; font-size: 0.875rem;">⚠️ ' + (data.message || 'No fee schedule found') + '</p>';
-                autoChargesData = [];
-            }
-        } catch (err) {
-            console.error('Fee engine error:', err);
-            document.getElementById('auto-charges-rows').innerHTML =
-                '<p style="color: #ef4444; font-size: 0.875rem;">❌ Error fetching charges</p>';
-        }
-    }
-
-    // Render auto-charge rows (read-only display)
-    function renderAutoCharges(data) {
-        const container = document.getElementById('auto-charges-rows');
-        const hiddenContainer = document.getElementById('auto-charges-hidden-inputs');
-
-        let html = '<div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.5rem; font-size: 0.875rem;">';
-        html += '<div style="font-weight: 600; color: #64748b;">Description</div>';
-        html += '<div style="font-weight: 600; color: #64748b; text-align: right;">Rate</div>';
-        html += '<div style="font-weight: 600; color: #64748b; text-align: right;">Amount</div>';
-
-        let hiddenHtml = '';
-
-        data.charges.forEach((charge, idx) => {
-            html += `<div style="padding: 0.5rem 0; border-top: 1px solid #e2e8f0;">${charge.description || charge.charge_type_cd}</div>`;
-            html += `<div style="padding: 0.5rem 0; border-top: 1px solid #e2e8f0; text-align: right;">${charge.rate ? (parseFloat(charge.rate) * 100).toFixed(4) + '%' : '—'}</div>`;
-            html += `<div style="padding: 0.5rem 0; border-top: 1px solid #e2e8f0; text-align: right; font-weight: 600;">${parseFloat(charge.amount).toFixed(4)}</div>`;
-
-            // Hidden inputs for POST submission
-            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_type" value="${charge.charge_type_cd}">`;
-            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_desc" value="${charge.description || ''}">`;
-            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_rate" value="${charge.rate || ''}">`;
-            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_amount" value="${charge.amount}">`;
-            hiddenHtml += `<input type="hidden" name="auto_charge_${idx}_ccy" value="${charge.cost_ccy_id || ''}">`;
-        });
-
-        html += '</div>';
-        html += `<div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 2px solid #cbd5e1; font-weight: 600; text-align: right;">
-                    Total: ${parseFloat(data.total_charges).toFixed(4)}
-                 </div>`;
-
-        container.innerHTML = html;
-        hiddenContainer.innerHTML = hiddenHtml + `<input type="hidden" name="auto_charges_count" value="${data.charges.length}">`;
-    }
-
-    // Update ticker stats (Gross, Charges, Net)
-    function updateTotals() {
-        const quantity = parseFloat(document.getElementById('id_quantity')?.value) || 0;
-        const price = parseFloat(document.getElementById('id_price')?.value) || 0;
-        const side = document.getElementById('id_side')?.value || 'BUY';
-
-        const gross = quantity * price;
-
-        // Sum auto charges
-        let autoTotal = 0;
-        autoChargesData.forEach(c => autoTotal += parseFloat(c.amount) || 0);
-
-        // Sum manual charges
-        let manualTotal = 0;
-        document.querySelectorAll('.charge-form-row input[name$="-amount"]').forEach(input => {
-            manualTotal += parseFloat(input.value) || 0;
-        });
-
-        const totalCharges = autoTotal + manualTotal;
-        const net = side === 'BUY' ? gross + totalCharges : gross - totalCharges;
-
-        // Update ticker
-        document.getElementById('ticker-gross').textContent = gross.toFixed(2);
-        document.getElementById('ticker-charges').textContent = totalCharges.toFixed(4);
-        document.getElementById('ticker-net').textContent = net.toFixed(2);
-
-        // Update hidden net field
-        const netField = document.getElementById('id_net_amount');
-        if (netField) netField.value = net.toFixed(4);
-    }
-
-    // Attach listeners
-    const debouncedFetch = debounce(fetchAutoCharges, 500);
-
-    ['id_trade_dt', 'id_quantity', 'id_price', 'id_side', 'id_broker', 'id_exec_venue'].forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', debouncedFetch);
-            field.addEventListener('change', debouncedFetch);
-        }
-    });
-
-    // Manual charge rows update totals
-    document.querySelectorAll('.charge-form-row input[name$="-amount"]').forEach(input => {
-        input.addEventListener('input', updateTotals);
-    });
-
-    // Initial call
-    fetchAutoCharges();
-})();
-</script>
-
 {% endblock %}
 
 {% block sidebar %}
@@ -770,7 +782,7 @@
     update();
 }());
 
-    // Fee Schedule Auto-Population Module
+// Fee Schedule Auto-Population Module
 (function() {
     'use strict';
     
@@ -858,7 +870,7 @@
             
             if (formRow) {
                 // Populate the form fields
-                const chargeTypeField = formRow.querySelector('[name*="charge_type"], #id_charges-' + index + '-charge_type');
+                const chargeTypeField = formRow.querySelector('[name*="charge_type_cd"], #id_charges-' + index + '-charge_type_cd');
                 const descriptionField = formRow.querySelector('[name*="description"], #id_charges-' + index + '-description');
                 const calcMethodField = formRow.querySelector('[name*="calc_method"], #id_charges-' + index + '-calc_method');
                 const rateField = formRow.querySelector('[name*="rate"], #id_charges-' + index + '-rate');
