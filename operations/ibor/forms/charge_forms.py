@@ -24,6 +24,9 @@ class TradeChargeForm(forms.ModelForm):
             "override_flag",
             "source_reference",
         ]
+        widgets = {
+            "amount": forms.NumberInput(attrs={"class": "charge-amount"}),
+        }
 
 
 class BaseTradeChargeFormSet(BaseInlineFormSet):

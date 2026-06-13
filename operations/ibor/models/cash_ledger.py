@@ -9,13 +9,19 @@ class IborCashEventType(models.TextChoices):
     """
     Generic cash event type.
     """
-    TRADE_SETTLE = "TRADE_SETTLE", "Trade settlement"
-    TRADE_FEE = "TRADE_FEE", "Trade fee/charges"
     DEPOSIT = "DEPOSIT", "Deposit"
     WITHDRAW = "WITHDRAW", "Withdrawal"
+    TRADE_SETTLE = "TRADE_SETTLE", "Trade settlement"
+    TRADE_FEE = "TRADE_FEE", "Trade fee/charges"
     DIVIDEND = "DIVIDEND", "Dividend"
     TAX = "TAX", "Tax"
     FX_CONV = "FX_CONV", "FX conversion"
+    OTHER = "OTHER", "Other"
+
+
+class WithdrawalMethod(models.TextChoices):
+    CASH = "CASH", "Cash"
+    BANK_TRANSFER = "BANK_TRANSFER", "Bank Transfer"
     OTHER = "OTHER", "Other"
 
 
@@ -42,12 +48,26 @@ class IborCashEvent(IborTimeStampedModel):
         related_name="ibor_cash_events",
         help_text="Portfolio whose cash is impacted.",
     )
-    # ✅ Currency should come from masters
+    account = models.ForeignKey(
+        "portfolio.Account",
+        on_delete=models.PROTECT,
+        related_name="ibor_cash_events",
+        help_text="Account whose cash is impacted.",
+        null=True,
+        blank=True,
+    )
+    cash_event_type = models.CharField(
+        max_length=20,
+        choices=IborCashEventType.choices,
+        default=IborCashEventType.OTHER,
+        help_text="Type/category of cash movement.",
+    )
+    # ✅ Currency should come from masters.Currency
     currency = models.ForeignKey(
         "masters.Currency",
         on_delete=models.PROTECT,
-        related_name="ibor_cash_ccy_trades",
-        help_text="Trade/contract currency (ISO3 from masters).",
+        related_name="ibor_cash_events",
+        help_text="Cash currency (ISO3 from masters).",
     )
     amount = models.DecimalField(
         max_digits=28,
@@ -57,11 +77,26 @@ class IborCashEvent(IborTimeStampedModel):
     effective_dt = models.DateField(
         help_text="Date when cash movement is effective for cash ladder.",
     )
-    cash_event_type = models.CharField(
+    withdrawal_method = models.CharField(
         max_length=20,
-        choices=IborCashEventType.choices,
-        default=IborCashEventType.OTHER,
-        help_text="Type/category of cash movement.",
+        choices=WithdrawalMethod.choices,
+        null=True,
+        blank=True,
+        help_text="Method of withdrawal (only for Withdrawals).",
+    )
+    fx_rate = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        null=True,
+        blank=True,
+        help_text="FX rate applied for this cash event (if any).",
+    )
+    currency_pair = models.ForeignKey(
+        "masters.CurrencyPair",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        help_text="FX currency pair applied for this cash event (if any).",
     )
 
     # Linkage (optional)

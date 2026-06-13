@@ -1,0 +1,129 @@
+{% extends "ibor/base_event.html" %}
+
+{% block page_title %}PortX · Positions & Holdings{% endblock %}
+{% block active_tab %}positions{% endblock %}
+{% block ticker_label %}Portfolio Inventory{% endblock %}
+{% block ticker_badge %}IBOR · Positions{% endblock %}
+
+{% block main_content %}
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Current Holdings</h2>
+        <div class="card-subtitle">Aggregate positions and underlying tax lots.</div>
+    </div>
+    <div class="card-body">
+        <table class="table" style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #eaeaea;">
+                    <th style="padding: 12px 8px;">Instrument</th>
+                    <th style="padding: 12px 8px;">Quantity</th>
+                    <th style="padding: 12px 8px;">Avg Cost</th>
+                    <th style="padding: 12px 8px;">Current Price</th>
+                    <th style="padding: 12px 8px;">Unrealized P&L</th>
+                    <th style="padding: 12px 8px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Example Row 1: Aggregate Position -->
+                <tr style="border-bottom: 1px solid #eaeaea;">
+                    <td style="padding: 12px 8px; font-weight: 600;">Apple Inc. (AAPL)</td>
+                    <td style="padding: 12px 8px;">1,000</td>
+                    <td style="padding: 12px 8px;">$150.00</td>
+                    <td style="padding: 12px 8px;">$175.00</td>
+                    <td style="padding: 12px 8px; color: green; font-weight: bold;">+$25,000.00</td>
+                    <td style="padding: 12px 8px;">
+                        <button type="button" class="btn btn-sm btn-outline" onclick="toggleLots('lots-aapl')">
+                            View Lots
+                        </button>
+                    </td>
+                </tr>
+                
+                <!-- Example Row 1: Lot Breakdown (Hidden by default) -->
+                <tr id="lots-aapl" style="display: none; background-color: #f9f9fa;">
+                    <td colspan="6" style="padding: 16px;">
+                        <div style="font-size: 0.9em; margin-bottom: 8px; font-weight: 600; color: #555;">Tax Lot Breakdown</div>
+                        <table style="width: 100%; border: 1px solid #ddd; border-collapse: collapse; background: #fff;">
+                            <thead>
+                                <tr style="background-color: #f1f1f1;">
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Lot ID</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Open Date</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Orig. Qty</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Rem. Qty</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Cost Basis</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">LOT-1001</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">Jan 1, 2023</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">400</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">400</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">$140.00</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">LOT-1045</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">Feb 1, 2023</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">600</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">600</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">$156.66</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Add more rows dynamically via Django template tags (e.g., ) later -->
+                
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Portfolio Summary</div>
+    <div class="summary-list">
+        <div class="summary-item">
+            <span class="summary-label">Total AUM</span>
+            <span class="summary-value" id="total-aum">$1,250,000.00</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Cash Balance</span>
+            <span class="summary-value" id="cash-balance">$150,000.00</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Market Value</span>
+            <span class="summary-value" id="market-value">$1,100,000.00</span>
+        </div>
+    </div>
+</div>
+
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Performance</div>
+    <div class="summary-list">
+        <div class="summary-item">
+            <span class="summary-label">Day P&L</span>
+            <span class="summary-value" style="color: green;">+$4,500.00</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Unrealized P&L</span>
+            <span class="summary-value" style="color: green;">+$85,000.00</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Simple script to toggle the visibility of the tax lot rows
+    function toggleLots(rowId) {
+        const lotRow = document.getElementById(rowId);
+        if (lotRow.style.display === "none") {
+            lotRow.style.display = "table-row";
+        } else {
+            lotRow.style.display = "none";
+        }
+    }
+</script>
+{% endblock %}

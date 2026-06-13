@@ -2,14 +2,20 @@
 from __future__ import annotations
 
 from decimal import Decimal, ROUND_HALF_UP
+from dataclasses import dataclass
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from operations.ibor.services.position_engine import PositionEngine
+from operations.ibor.services.lot_engine import LotEngine
+from operations.ibor.services.cash_booking import CashBookingService
+from operations.ibor.services.validators import validate_trade_for_booking
 
 from operations.ibor.models.trade import (
     IborChargeComponent,
     IborSide,
     IborTradeEvent,
+    IborBookStatus,
 )
 
 
@@ -21,6 +27,14 @@ def q(value: Decimal) -> Decimal:
     Standard 10‑dp quantizer for amounts.
     """
     return Decimal(value).quantize(AMT_DP, rounding=ROUND_HALF_UP)
+
+
+@dataclass
+class BookingResult:
+    trade_id: int
+    cash_event_count: int
+    lot_count: int
+    lot_consumption_count: int
 
 
 class TradeChargeCalculator:
@@ -48,6 +62,39 @@ class TradeBookingService:
     - default settle_ccy when missing
     - leave cash/lot posting to other services
     """
+
+    @staticmethod
+    @transaction.atomic
+    def book_trade(trade_id: int) -> BookingResult:
+        trade = IborTradeEvent.objects.get(pk=trade_id)
+
+        # 1. Validate
+        validation = validate_trade_for_booking(trade)
+
+        # 2. Check Cash if BUY
+        if trade.side == IborSide.BUY:
+            available_cash = CashBookingService.get_cash_balance(trade.portfolio_id, trade.settle_dt)
+            if available_cash < trade.net_amount:
+                raise ValidationError(
+                    {"settlement_cash": [f"Insufficient cash for buy trade. Required: {trade.net_amount}, Available: {available_cash}"]}
+                )
+
+        # 3. Book Lots
+        lot_result = LotEngine.book_trade_lots(validation)
+
+        # 4. Book Cash
+        cash_event_count = CashBookingService.book_trade_cash(validation)
+
+        # 5. Mark as booked
+        trade.book_sts_cd = IborBookStatus.BOOKED
+        trade.save(update_fields=["book_sts_cd", "updated_at"])
+
+        return BookingResult(
+            trade_id=trade.id,
+            cash_event_count=cash_event_count,
+            lot_count=lot_result.lot_count,
+            lot_consumption_count=lot_result.lot_consumption_count,
+        )
 
     @staticmethod
     @transaction.atomic

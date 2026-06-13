@@ -113,13 +113,21 @@ body{background:var(--bg);font-family:-apple-system,"Inter",Arial,sans-serif;col
     </a>
 
     <div class="ibor-nav-tabs">
+        <a href="{% url 'ibor:home' %}"
+           class="ibor-nav-tab {% if active_tab == 'home' %}active{% endif %}">
+            Home
+        </a>
         <a href="{% url 'ibor:trade-create' %}"
            class="ibor-nav-tab {% if active_tab == 'trade' %}active{% endif %}">
             Trade
         </a>
-        <a href="#"
+        <a href="{% url 'ibor:cash-create' %}"
            class="ibor-nav-tab {% if active_tab == 'cash' %}active{% endif %}">
             Cash
+        </a>
+        <a href="{% url 'ibor:positions' %}"
+           class="ibor-nav-tab {% if active_tab == 'positions' %}active{% endif %}">
+            Positions & Holdings
         </a>
         <a href="#"
            class="ibor-nav-tab {% if active_tab == 'corporate' %}active{% endif %}">
@@ -128,10 +136,6 @@ body{background:var(--bg);font-family:-apple-system,"Inter",Arial,sans-serif;col
         <a href="#"
            class="ibor-nav-tab {% if active_tab == 'adjustment' %}active{% endif %}">
             Adjustment
-        </a>
-        <a href="#"
-           class="ibor-nav-tab {% if active_tab == 'home' %}active{% endif %}">
-            Home
         </a>
     </div>
 

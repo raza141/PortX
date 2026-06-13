@@ -186,26 +186,31 @@ class IborFeeScheduleSelector:
             return []
 
         # 2. Get ALL active rules for this schedule (ordered by sequence)
-        rules = (
-            schedule.rules.filter(is_active=True)
-            .order_by('sequence_no')
-            .values(
-                'id',
-                'sequence_no',
-                'charge_type_cd',
-                'description',
-                'calc_method',
-                'apply_on',
-                'rate',
-                'flat_amount',
-                'per_unit_amount',
-                'minimum_amount',
-                'maximum_amount',
-                'currency_id',
-                'reference_charge_type_cd',
-                'rounding_dp',
-                'is_mandatory',
+        rules = schedule.rules.filter(is_active=True)
+        if share_price is not None:
+            rules = rules.filter(
+                Q(min_price__isnull=True) | Q(min_price__lte=share_price),
+                Q(max_price__isnull=True) | Q(max_price__gte=share_price),
             )
+        
+        rules = rules.order_by('sequence_no')
+        
+        rules = rules.values(
+            'id',
+            'sequence_no',
+            'charge_type_cd',
+            'description',
+            'calc_method',
+            'apply_on',
+            'rate',
+            'flat_amount',
+            'per_unit_amount',
+            'minimum_amount',
+            'maximum_amount',
+            'currency_id',
+            'reference_charge_type_cd',
+            'rounding_dp',
+            'is_mandatory',
         )
 
         return list(rules)

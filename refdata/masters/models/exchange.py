@@ -40,6 +40,7 @@ class Exchange(models.Model):
         blank=True,
     )
     market_status = models.CharField(choices=MarketStatus.choices, default=MarketStatus.ACTIVE, max_length=10)
+    settlement_offset = models.IntegerField(default=0, help_text="Number of days for settlement (e.g., 0 for T+0, 1 for T+1)")
 
     created_at = models.DateTimeField(null=True, blank=True)
 

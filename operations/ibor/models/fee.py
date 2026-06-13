@@ -18,6 +18,7 @@ class IborFeeCalcMethod(models.TextChoices):
     PCT_CUMULATIVE = 'PCT_CUMUL', 'Percent of cumulative charges'
     MIN_OF_PCT_OR_FLAT = "MIN_OF_PCT_OR_FLAT", "Minimum of percent or flat"
     MAX_OF_PCT_OR_FLAT = "MAX_OF_PCT_OR_FLAT", "Maximum of percent or flat"
+    PSX_TIERED_COMMISSION = "PSX_TIERED_COMMISSION", "PSX Tiered Commission"
 
 
 class IborFeeApplyOn(models.TextChoices):
@@ -211,6 +212,22 @@ class IborFeeRule(IborTimeStampedModel):
         null=True,
         blank=True,
         help_text="Optional maximum fee cap.",
+    )
+
+    min_price = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        null=True,
+        blank=True,
+        help_text="Minimum share price for this rule to apply.",
+    )
+
+    max_price = models.DecimalField(
+        max_digits=28,
+        decimal_places=10,
+        null=True,
+        blank=True,
+        help_text="Maximum share price for this rule to apply.",
     )
 
     currency = models.ForeignKey(

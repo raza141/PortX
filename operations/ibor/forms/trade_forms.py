@@ -32,6 +32,12 @@ class BaseTradeForm(forms.ModelForm):
             "memo",
         ]
 
+    settle_offset = forms.IntegerField(
+        label="Settlement Offset",
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
     def clean(self):
         cleaned = super().clean()
         errors = []

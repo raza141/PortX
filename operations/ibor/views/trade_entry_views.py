@@ -11,6 +11,9 @@ from operations.ibor.models.trade import IborTradeEvent
 from operations.ibor.services.trade_booking import TradeBookingService
 
 
+from refdata.masters.models.exchange import Exchange
+import json
+
 class IborTradeCreateView(View):
     template_name = "ibor/trade/trade_form.html"
     success_url = reverse_lazy("ibor:trade-create")
@@ -37,9 +40,14 @@ class IborTradeCreateView(View):
 
     def get(self, request, *args, **kwargs):
         form, charge_formset = self._get_forms()
+        
+        exchanges = Exchange.objects.all().values('exchange_id', 'settlement_offset')
+        exchanges_data = {e['exchange_id']: e['settlement_offset'] for e in exchanges}
+        
         return render(request, self.template_name, {
             "form": form,
             "charge_formset": charge_formset,
+            "exchanges_data": json.dumps(exchanges_data),
         })
 
     def post(self, request, *args, **kwargs):
@@ -49,9 +57,12 @@ class IborTradeCreateView(View):
         form, charge_formset = self._get_forms(data=post_data)
 
         if not form.is_valid() or not charge_formset.is_valid():
+            exchanges = Exchange.objects.all().values('exchange_id', 'settlement_offset')
+            exchanges_data = {e['exchange_id']: e['settlement_offset'] for e in exchanges}
             return render(request, self.template_name, {
                 "form": form,
                 "charge_formset": charge_formset,
+                "exchanges_data": json.dumps(exchanges_data),
             })
 
         action = form.cleaned_data.get("action", "book")

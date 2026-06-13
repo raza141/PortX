@@ -1,16 +1,49 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from datetime import date
+from django.db.models import Sum
 
 from operations.ibor.models.cash_ledger import IborCashEvent
 from operations.ibor.models.trade import IborSide
 from operations.ibor.services.validators import TradeValidationResult
+from refdata.masters.models.fx import FxRateDaily
+from operations.portfolio.models.portfolio import Portfolio
 
 
 class CashBookingService:
     TRADE_SETTLE = "TRADESETTLE"
     TRADE_FEE = "TRADEFEE"
     TAX = "TAX"
+
+    @classmethod
+    def get_cash_balance(cls, portfolio_id: int, effective_dt: date) -> Decimal:
+        balance = IborCashEvent.objects.filter(
+            portfolio_id=portfolio_id,
+            effective_dt__lte=effective_dt
+        ).aggregate(total=Sum('amount'))['total']
+        return balance or Decimal("0")
+
+    @classmethod
+    def get_fx_rate(cls, portfolio_id: int, event_currency_id: int, effective_dt: date) -> tuple[Decimal | None, CurrencyPair | None]:
+        portfolio = Portfolio.objects.get(pk=portfolio_id)
+        base_ccy_id = portfolio.base_ccy_id
+        
+        from refdata.masters.models.currency import Currency
+        from refdata.masters.models.currency_pair import CurrencyPair
+        
+        pair = CurrencyPair.objects.filter(base_currency_id=event_currency_id, quote_currency_id=base_ccy_id).first()
+
+        if not base_ccy_id or base_ccy_id == event_currency_id:
+            return Decimal("1.0"), pair
+
+        rate = FxRateDaily.objects.filter(
+            rate_date=effective_dt,
+            base_currency_id=event_currency_id,
+            quote_currency_id=base_ccy_id
+        ).first()
+
+        return (rate.mid if rate else None), pair
 
     @classmethod
     def book_trade_cash(cls, validation: TradeValidationResult) -> int:

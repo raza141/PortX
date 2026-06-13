@@ -1,0 +1,272 @@
+{% extends "ibor/base_event.html" %}
+
+{% block page_title %}PortX · Cash Entry{% endblock %}
+{% block active_tab %}cash{% endblock %}
+{% block ticker_label %}New Cash Event{% endblock %}
+{% block ticker_badge %}IBOR · Cash{% endblock %}
+
+{% block main_content %}
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Cash Event Details</h2>
+        <div class="card-subtitle">Record a cash movement for a portfolio.</div>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div class="field">
+                <label for="{{ form.portfolio.id_for_label }}">Portfolio</label>
+                {{ form.portfolio }}
+                {% for e in form.portfolio.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="{{ form.account.id_for_label }}">Account</label>
+                {{ form.account }}
+                {% for e in form.account.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="{{ form.cash_event_type.id_for_label }}">Cash Event Type</label>
+                {{ form.cash_event_type }}
+                {% for e in form.cash_event_type.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="{{ form.currency.id_for_label }}">Currency</label>
+                {{ form.currency }}
+                {% for e in form.currency.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="{{ form.amount.id_for_label }}">Amount</label>
+                {{ form.amount }}
+                <div class="hint">Signed cash amount: +inflow, -outflow.</div>
+                {% for e in form.amount.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field" id="currency-pair-field" style="display: none;">
+                <label for="{{ form.currency_pair.id_for_label }}">Currency Pair</label>
+                {{ form.currency_pair }}
+                <div class="hint">Currency pair used for FX conversion.</div>
+                {% for e in form.currency_pair.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="{{ form.effective_dt.id_for_label }}">Effective Date</label>
+                {{ form.effective_dt }}
+                {% for e in form.effective_dt.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field" id="withdrawal-method-field" style="display: none;">
+                <label for="{{ form.withdrawal_method.id_for_label }}">Withdrawal Method</label>
+                {{ form.withdrawal_method }}
+                {% for e in form.withdrawal_method.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field" id="fx-rate-field" style="display: none;">
+                <label for="{{ form.fx_rate.id_for_label }}">FX Rate (<span id="fx-rate-pair-label"></span>)</label>
+                {{ form.fx_rate }}
+                <div class="hint">FX rate if currency conversion is involved.</div>
+                {% for e in form.fx_rate.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="{{ form.trade.id_for_label }}">Related Trade</label>
+                {{ form.trade }}
+                <div class="hint">Optional: Link to a trade settlement.</div>
+                {% for e in form.trade.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field full">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {% for e in form.description.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="{{ form.state_cd.id_for_label }}">State</label>
+                {{ form.state_cd }}
+                {% for e in form.state_cd.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Live preview</div>
+    <div class="summary-list">
+        <div class="summary-item">
+            <span class="summary-label">Portfolio</span>
+            <span class="summary-value" id="prev-portfolio">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Account</span>
+            <span class="summary-value" id="prev-account">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Amount</span>
+            <span class="summary-value" id="prev-amount">—</span>
+        </div>
+    </div>
+</div>
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Booking effect</div>
+    <div class="preview-box" id="prev-effect">
+        Enter cash details to preview the booking effect.
+    </div>
+</div>
+<div class="sidebar-actions">
+    <button type="submit" name="submit_action" value="save" class="btn btn-primary">
+        Save Cash Event
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+    'use strict';
+    const els = {
+        portfolio: document.getElementById('id_portfolio'),
+        account: document.getElementById('id_account'),
+        amount: document.getElementById('id_amount'),
+        currency: document.getElementById('id_currency'),
+        effectiveDt: document.getElementById('id_effective_dt'),
+        cashEventType: document.getElementById('id_cash_event_type'),
+        withdrawalMethodField: document.getElementById('withdrawal-method-field'),
+        fxRateField: document.getElementById('fx-rate-field'),
+        fxRate: document.getElementById('id_fx_rate'),
+        currencyPairField: document.getElementById('currency-pair-field'),
+        currencyPair: document.getElementById('id_currency_pair'),
+        
+        prevPortfolio: document.getElementById('prev-portfolio'),
+        prevAccount: document.getElementById('prev-account'),
+        prevAmount: document.getElementById('prev-amount'),
+        prevEffect: document.getElementById('prev-effect')
+    };
+
+    let accountCurrencyId = null;
+
+    async function fetchFxRate() {
+        const type = els.cashEventType?.value;
+        if (!['DEPOSIT', 'WITHDRAW', 'DIVIDEND', 'FX_CONV'].includes(type)) {
+            return;
+        }
+
+        const pairId = els.currencyPair?.value;
+        const effectiveDt = els.effectiveDt?.value;
+        
+        if (!pairId || !effectiveDt) {
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({
+                currency_pair_id: pairId,
+                effective_date: effectiveDt
+            });
+
+            const response = await fetch(`/ibor/cash/get-fx-rate/?${params}`);
+            const data = await response.json();
+
+            if (response.ok && data.fx_rate) {
+                els.fxRate.value = parseFloat(data.fx_rate).toFixed(4);
+            } else {
+                els.fxRate.value = '';
+                if (data.error) {
+                    alert(data.error);
+                }
+            }
+            calculateTotals();
+        } catch (err) {
+            console.error('FX rate fetch error:', err);
+        }
+    }
+
+    async function fetchCurrencyPair() {
+        const transCurrencyId = els.currency?.value;
+        if (!transCurrencyId || !accountCurrencyId) return;
+
+        try {
+            const params = new URLSearchParams({
+                base_currency_id: transCurrencyId,
+                quote_currency_id: accountCurrencyId
+            });
+
+            const response = await fetch(`/ibor/cash/get-currency-pair/?${params}`);
+            const data = await response.json();
+
+            if (response.ok && data.pair_id) {
+                els.currencyPair.value = data.pair_id;
+                fetchFxRate();
+            } else {
+                els.currencyPair.value = '';
+                els.fxRate.value = '';
+            }
+        } catch (err) {
+            console.error('Currency pair fetch error:', err);
+        }
+    }
+
+    async function fetchAccountCurrency() {
+        const accountId = els.account?.value;
+        if (!accountId) return;
+
+        try {
+            const response = await fetch(`/ibor/cash/get-account-currency/?account_id=${accountId}`);
+            const data = await response.json();
+
+            if (response.ok && data.currency_id) {
+                accountCurrencyId = data.currency_id;
+                els.currency.value = data.currency_id;
+                fetchCurrencyPair();
+                calculateTotals();
+            }
+        } catch (err) {
+            console.error('Account currency fetch error:', err);
+        }
+    }
+
+    function calculateTotals() {
+        if (els.cashEventType) {
+            const type = els.cashEventType.value;
+            els.withdrawalMethodField.style.display = (type === 'WITHDRAW') ? 'block' : 'none';
+            const showFx = ['DEPOSIT', 'WITHDRAW', 'DIVIDEND', 'FX_CONV'].includes(type);
+            els.fxRateField.style.display = showFx ? 'block' : 'none';
+            els.currencyPairField.style.display = showFx ? 'block' : 'none';
+        }
+        
+        const port = els.portfolio && els.portfolio.selectedOptions && els.portfolio.selectedOptions[0].text;
+        const acct = els.account && els.account.selectedOptions && els.account.selectedOptions[0].text;
+        const amt = els.amount ? parseFloat(els.amount.value) || 0 : 0;
+        const fxRate = els.fxRate ? parseFloat(els.fxRate.value) || 1 : 1;
+        const ccy = els.currency && els.currency.selectedOptions && els.currency.selectedOptions[0].text;
+        
+        const convertedAmt = (amt * fxRate).toFixed(2);
+
+        if (els.prevPortfolio) els.prevPortfolio.textContent = port || "—";
+        if (els.prevAccount) els.prevAccount.textContent = acct || "—";
+        if (els.prevAmount) els.prevAmount.textContent = (amt ? amt + " " + (ccy || "") + (fxRate !== 1 ? ` (≈ ${convertedAmt})` : "") : "—");
+
+        if (els.prevEffect) {
+            if (!amt) {
+                els.prevEffect.textContent = "Enter cash details to preview the booking effect.";
+            } else {
+                const type = amt >= 0 ? "inflow" : "outflow";
+                els.prevEffect.textContent = `Will create a cash ${type} of ${amt} ${ccy || ""} (FX adjusted: ${convertedAmt}) for portfolio ${port || "—"} / account ${acct || "—"}.`;
+            }
+        }
+    }
+
+    [els.portfolio, els.account, els.amount, els.currency, els.cashEventType].forEach(el => {
+        if (el) el.addEventListener("input", calculateTotals);
+        if (el) el.addEventListener("change", calculateTotals);
+    });
+
+    [els.effectiveDt, els.currencyPair, els.cashEventType].forEach(el => {
+        if (el) el.addEventListener("change", fetchFxRate);
+    });
+
+    [els.currency].forEach(el => {
+        if (el) el.addEventListener("change", fetchCurrencyPair);
+    });
+
+    [els.account].forEach(el => {
+        if (el) el.addEventListener("change", fetchAccountCurrency);
+    });
+    
+    calculateTotals();
+})();
+</script>
+{% endblock %}

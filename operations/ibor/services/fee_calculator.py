@@ -51,10 +51,17 @@ class IborFeeCalculator:
         calculated_lines: list[CalculatedFeeLine] = []
 
         for rule in schedule.rules.filter(is_active=True).order_by("sequence_no", "id"):
+            # Price filtering
+            if rule.min_price is not None and price < rule.min_price:
+                continue
+            if rule.max_price is not None and price > rule.max_price:
+                continue
+
             amount = cls._calculate_rule_amount(
                 rule=rule,
                 gross_amount=gross_amount,
                 quantity=quantity,
+                price=price,
                 calculated_lines=calculated_lines,
             )
 
@@ -99,6 +106,7 @@ class IborFeeCalculator:
         rule: IborFeeRule,
         gross_amount: Decimal,
         quantity: Decimal,
+        price: Decimal,
         calculated_lines: list[CalculatedFeeLine],
     ) -> Decimal:
         base_value = cls._get_base_value(
@@ -121,6 +129,14 @@ class IborFeeCalculator:
 
         elif rule.calc_method == IborFeeCalcMethod.PCT_OF_CHARGE:
             amount = base_value * (rule.rate or ZERO)
+            
+        elif rule.calc_method == "PSX_TIERED_COMMISSION":
+            if price > 10:
+                pct_amount = gross_amount * Decimal("0.0015")
+                per_unit_amount = quantity * Decimal("0.05")
+                amount = max(pct_amount, per_unit_amount)
+            else:
+                amount = quantity * Decimal("0.03")
 
         elif rule.calc_method == IborFeeCalcMethod.MIN_OF_PCT_OR_FLAT:
             pct_amount = base_value * (rule.rate or ZERO)

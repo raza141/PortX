@@ -25,15 +25,15 @@ class IborFeeRuleInline(admin.TabularInline):
     model = IborFeeRule
     extra = 1
     fields = [
-        'charge_type',
-        'sequence',
-        'calculation_method',
-        'rate_value',
-        'min_price',
-        'max_price',
+        'charge_type_cd',
+        'sequence_no',
+        'calc_method',
+        'rate',
+        'minimum_amount',
+        'maximum_amount',
         'reference_charge_type_cd',
     ]
-    ordering = ['sequence']
+    ordering = ['sequence_no']
     
     # Make it easier to read
     verbose_name = "Fee Rule"
@@ -49,33 +49,33 @@ class IborFeeScheduleAdmin(admin.ModelAdmin):
         'schedule_name',
         'broker',
         'asset_class',
-        'exchange',
-        'currency',
-        'effective_date',
-        'expiry_date',
+        'exec_venue',
+        'trade_ccy',
+        'effective_from',
+        'effective_to',
         'is_active',
     ]
     list_filter = [
         'broker',
         'asset_class',
-        'exchange',
-        'currency',
+        'exec_venue',
+        'trade_ccy',
         'is_active',
     ]
-    search_fields = ['schedule_name', 'broker__broker_name']
+    search_fields = ['schedule_name', 'broker__broker_nm']
     
     inlines = [IborFeeRuleInline]
     
     fieldsets = (
         ('Schedule Details', {
-            'fields': ('schedule_name', 'broker', 'asset_class', 'exchange', 'currency')
+            'fields': ('schedule_name', 'broker', 'asset_class', 'exec_venue', 'trade_ccy')
         }),
         ('Effective Dates', {
-            'fields': ('effective_date', 'expiry_date', 'is_active')
+            'fields': ('effective_from', 'effective_to', 'is_active')
         }),
     )
     
-    date_hierarchy = 'effective_date'
+    date_hierarchy = 'effective_from'
 
 
 # ============================================================================
@@ -91,12 +91,12 @@ class IborChargeComponentInline(admin.TabularInline):
     model = IborChargeComponent
     extra = 1
     fields = [
-        'chargetypecd',
+        'charge_type_cd',
         'description',
         'rate',
         'amount',
-        'costccy',
-        'iswithholding',
+        'cost_ccy',
+        'is_withholding',
     ]
     
     # Make read-only for auto-populated charges in future
@@ -124,26 +124,26 @@ class IborTradeEventAdmin(admin.ModelAdmin):
     """
     list_display = [
         'id',
-        'tradedt',
+        'trade_dt',
         'portfolio',
         'instrument',
         'side',
         'quantity',
         'price',
-        'tradeccy',
-        'statecd',
-        'bookstscd',
+        'trade_ccy',
+        'state_cd',
+        'book_sts_cd',
     ]
     list_filter = [
-        'statecd',
-        'bookstscd',
+        'state_cd',
+        'book_sts_cd',
         'side',
         'portfolio',
         'broker',
-        'tradedt',
+        'trade_dt',
     ]
     search_fields = [
-        'externalref',
+        'external_ref',
         'instrument__symbol',
         'portfolio__portfolio_code',
     ]
@@ -152,26 +152,26 @@ class IborTradeEventAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Source & Reference', {
-            'fields': ('sourcesystem', 'externalref', 'versionno', 'replacestrade')
+            'fields': ('source_system', 'external_ref', 'version_no', 'replaces_trade')
         }),
         ('Portfolio & Account', {
-            'fields': ('portfolio', 'account', 'broker', 'execvenue')
+            'fields': ('portfolio', 'account', 'broker', 'exec_venue')
         }),
         ('Instrument', {
-            'fields': ('instrument', 'assetclass', 'assetsubclass')
+            'fields': ('instrument', 'asset_class', 'asset_sub_class')
         }),
         ('Trade Details', {
-            'fields': ('side', 'quantity', 'price', 'tradeccy', 'settleccy')
+            'fields': ('side', 'quantity', 'price', 'trade_ccy', 'settle_ccy')
         }),
         ('Dates', {
-            'fields': ('tradedt', 'settledt')
+            'fields': ('trade_dt', 'settle_dt')
         }),
         ('Economics', {
-            'fields': ('grossamount', 'netamount'),
+            'fields': ('gross_amount', 'net_amount'),
             'description': 'Charges will be added below in the Charges section'
         }),
         ('Lifecycle', {
-            'fields': ('statecd', 'statets', 'bookstscd', 'bookts', 'bookerrtxt'),
+            'fields': ('state_cd', 'state_ts', 'book_sts_cd', 'book_ts', 'book_err_txt'),
             'classes': ('collapse',)
         }),
         ('Notes', {
@@ -180,7 +180,7 @@ class IborTradeEventAdmin(admin.ModelAdmin):
         }),
     )
     
-    date_hierarchy = 'tradedt'
+    date_hierarchy = 'trade_dt'
     
     # Actions
     actions = ['mark_as_booked', 'recalculate_charges']

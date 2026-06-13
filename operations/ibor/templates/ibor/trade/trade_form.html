@@ -22,6 +22,7 @@
 
 {% block hidden_fields %}
     {{ charge_formset.management_form }}
+    {{ form.settle_offset }}
 {% endblock %}
 
 {% block main_content %}
@@ -231,7 +232,7 @@
         </div>
 
         {# MANUAL CHARGES - Editable Formset #}
-        <div>
+        <div id="charge-formset-container">
             <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #475569;">
                 ✏️ Manual / Reconciliation Charges
             </h4>
@@ -387,111 +388,292 @@
 }
 </style>
 
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Live preview</div>
+    <div class="summary-list">
+        <div class="summary-item">
+            <span class="summary-label">Side</span>
+            <span class="summary-value" id="prev-side">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Quantity</span>
+            <span class="summary-value" id="prev-qty">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Price</span>
+            <span class="summary-value" id="prev-price">—</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+            <span class="summary-label">Gross amount</span>
+            <span class="summary-value" id="prev-gross">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Total charges</span>
+            <span class="summary-value" id="prev-charges">—</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+            <span class="summary-label">Net amount</span>
+            <span class="summary-value" id="prev-net">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Settlement cash</span>
+            <span class="summary-value" id="prev-cash">—</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Available cash</span>
+            <span class="summary-value" id="prev-available-cash">—</span>
+        </div>
+    </div>
+</div>
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Booking effect</div>
+    <div class="preview-box" id="prev-effect">
+        Enter trade economics and charges to preview the booking effect.
+    </div>
+</div>
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Charge mapping guide</div>
+    <div class="preview-box">
+        <strong>COMM</strong> — Broker commission<br>
+        <strong>LEVY</strong> — PSX / CDC / exchange levies<br>
+        <strong>VAT</strong> — SST / GST / VAT<br>
+        <strong>STAMP</strong> — Stamp duty<br>
+        <strong>TAX</strong> — Withholding or advance tax<br>
+        <strong>OTHER</strong> — Exceptional items
+    </div>
+</div>
+<div class="sidebar-actions">
+    <button type="submit" name="submit_action" value="book" class="btn btn-primary">
+        Save &amp; Book
+    </button>
+    <button type="submit" name="submit_action" value="save" class="btn btn-secondary">
+        Save only
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
-// Formset Management - Add new charge rows
 (function() {
     'use strict';
 
-    const FORMSET_PREFIX = 'charges';
-    const formsetContainer = document.querySelector('[id$="charge-formset-container"], .charge-row').parentElement;
-    const addButton = document.getElementById('add-charge-row');
-    const formsetForm = document.querySelector(`[name^="${FORMSET_PREFIX}-TOTAL_FORMS"]`);
+    // State
+    let autoChargesData = [];
+    const exchangesData = {{ exchanges_data|safe }};
 
-    if (!formsetContainer || !addButton || !formsetForm) {
-        console.warn('Formset management: Required elements not found');
-        return;
+    // DOM Elements
+    const els = {
+        qty: document.getElementById('id_quantity'),
+        price: document.getElementById('id_price'),
+        side: document.getElementById('id_side'),
+        tradeCcy: document.getElementById('id_trade_ccy'),
+        settleCcy: document.getElementById('id_settle_ccy'),
+        gross: document.getElementById('id_gross_amount'),
+        net: document.getElementById('id_net_amount'),
+        broker: document.getElementById('id_broker'),
+        execVenue: document.getElementById('id_exec_venue'),
+        tradeDt: document.getElementById('id_trade_dt'),
+        settleDt: document.getElementById('id_settle_dt'),
+        settleOffset: document.getElementById('id_settle_offset'),
+        assetClass: document.getElementById('id_asset_class'),
+        portfolio: document.getElementById('id_portfolio'),
+
+        // Preview elements
+        prevSide: document.getElementById('prev-side'),
+        prevQty: document.getElementById('prev-qty'),
+        prevPrice: document.getElementById('prev-price'),
+        prevGross: document.getElementById('prev-gross'),
+        prevCharges: document.getElementById('prev-charges'),
+        prevNet: document.getElementById('prev-net'),
+        prevCash: document.getElementById('prev-cash'),
+        prevAvailableCash: document.getElementById('prev-available-cash'),
+        prevEffect: document.getElementById('prev-effect'),
+
+        // Ticker stats
+        tickerGross: document.getElementById('ticker-gross'),
+        tickerCharges: document.getElementById('ticker-charges'),
+        tickerNet: document.getElementById('ticker-net'),
+
+        // Formset
+        chargeFormset: document.getElementById('charge-formset-container'),
+        addChargeBtn: document.getElementById('add-charge-row'),
+        totalForms: document.querySelector('[name^="charges-TOTAL_FORMS"]'),
+
+        // Auto charges
+        autoChargesRows: document.getElementById('auto-charges-rows'),
+        autoChargesPlaceholder: document.getElementById('auto-charges-placeholder'),
+        autoChargesHidden: document.getElementById('auto-charges-hidden'),
+    };
+
+    function toNum(val) { var n = parseFloat(val); return isFinite(n) ? n : 0; }
+    function fmt(n) { return n.toLocaleString("en-US", {minimumFractionDigits:4, maximumFractionDigits:4}); }
+    function ccyText() {
+        if (!els.tradeCcy) return "";
+        var opt = els.tradeCcy.selectedOptions && els.tradeCcy.selectedOptions[0];
+        return opt ? opt.text : "";
     }
 
-    addButton.addEventListener('click', function(e) {
-        e.preventDefault();
+    function syncSettleCcy() {
+        if (els.tradeCcy && els.settleCcy) {
+            if (els.tradeCcy.value === 'PKR') {
+                els.settleCcy.value = 'PKR';
+            } else if (!els.settleCcy.value) {
+                els.settleCcy.value = els.tradeCcy.value;
+            }
+        }
+    }
 
-        // Get current form count
-        const totalForms = formsetForm;
-        const formIdx = parseInt(totalForms.value) || 0;
+    // Consolidated calculation function
+    function calculateTotals() {
+        var qty = toNum(els.qty && els.qty.value);
+        var price = toNum(els.price && els.price.value);
+        var side = els.side ? els.side.value : "";
+        var ccy = ccyText();
 
-        // Clone the last form (without clearing values) or create new
-        const existingForms = formsetContainer.querySelectorAll('.charge-row');
-        let newForm;
+        var gross = qty * price;
 
-        if (existingForms.length > 0) {
-            const lastForm = existingForms[existingForms.length - 1];
-            newForm = lastForm.cloneNode(true);
+        // Auto charges total
+        var autoTotal = 0;
+        autoChargesData.forEach(c => autoTotal += toNum(c.amount));
 
-            // Clear input values in cloned form
-            newForm.querySelectorAll('input[type="text"], input[type="number"], select').forEach(field => {
-                if (!field.name.includes('DELETE')) {
-                    field.value = '';
-                }
-            });
-
-            // Update field names and IDs to new index
-            newForm.querySelectorAll('[name], [for], [id]').forEach(elem => {
-                if (elem.name) {
-                    elem.name = elem.name.replace(/-\d+-/, `-${formIdx}-`);
-                }
-                if (elem.id) {
-                    elem.id = elem.id.replace(/_\d+_/, `_${formIdx}_`);
-                }
-                if (elem.getAttribute('for')) {
-                    elem.setAttribute('for', elem.getAttribute('for').replace(/_\d+_/, `_${formIdx}_`));
-                }
-            });
-        } else {
-            // Fallback: create minimal form row
-            newForm = document.createElement('div');
-            newForm.className = 'charge-row';
-            newForm.style.cssText = 'display: grid; grid-template-columns: 1.5fr 2fr 1fr 1.5fr 1fr auto; gap: 1rem; align-items: end; margin-bottom: 1rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 6px;';
-            newForm.innerHTML = `
-                <div class="form-field">
-                    <label for="id_${FORMSET_PREFIX}-${formIdx}-charge_type_cd" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Charge Type</label>
-                    <select name="${FORMSET_PREFIX}-${formIdx}-charge_type_cd" id="id_${FORMSET_PREFIX}-${formIdx}-charge_type_cd"></select>
-                </div>
-                <div class="form-field">
-                    <label for="id_${FORMSET_PREFIX}-${formIdx}-description" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Description</label>
-                    <input type="text" name="${FORMSET_PREFIX}-${formIdx}-description" id="id_${FORMSET_PREFIX}-${formIdx}-description">
-                </div>
-                <div class="form-field">
-                    <label for="id_${FORMSET_PREFIX}-${formIdx}-rate" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Rate (%)</label>
-                    <input type="number" name="${FORMSET_PREFIX}-${formIdx}-rate" id="id_${FORMSET_PREFIX}-${formIdx}-rate" step="0.0001">
-                </div>
-                <div class="form-field">
-                    <label for="id_${FORMSET_PREFIX}-${formIdx}-amount" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Amount</label>
-                    <input type="number" name="${FORMSET_PREFIX}-${formIdx}-amount" id="id_${FORMSET_PREFIX}-${formIdx}-amount" step="0.0001" class="charge-amount">
-                </div>
-                <div class="form-field">
-                    <label for="id_${FORMSET_PREFIX}-${formIdx}-cost_ccy" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Ccy</label>
-                    <select name="${FORMSET_PREFIX}-${formIdx}-cost_ccy" id="id_${FORMSET_PREFIX}-${formIdx}-cost_ccy"></select>
-                </div>
-                <div class="form-field" style="padding-bottom: 0.25rem;">
-                    <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; color: #ef4444;">
-                        <input type="checkbox" name="${FORMSET_PREFIX}-${formIdx}-DELETE">
-                        <span>🗑️ Remove</span>
-                    </label>
-                </div>
-                <div style="display: none;">
-                    <input type="hidden" name="${FORMSET_PREFIX}-${formIdx}-id">
-                </div>
-            `;
+        // Manual charges total
+        var manualTotal = 0;
+        if (els.chargeFormset) {
+            els.chargeFormset.querySelectorAll('.charge-amount').forEach(el => manualTotal += toNum(el.value));
         }
 
-        // Insert before button
-        formsetContainer.insertBefore(newForm, addButton);
+        var totalCharges = autoTotal + manualTotal;
+        var net = side === "BUY" ? gross + totalCharges : (side === "SELL" ? gross - totalCharges : gross);
 
-        // Update TOTAL_FORMS
-        totalForms.value = formIdx + 1;
+        // Update form fields
+        if (els.gross) els.gross.value = gross ? fmt(gross) : "";
+        if (els.net) els.net.value = net ? fmt(net) : "";
 
-        console.log(`Added new charge form ${formIdx}. Total forms: ${totalForms.value}`);
-    });
-})();
-</script>
+        // Update preview sidebar
+        if (els.prevSide) els.prevSide.textContent = side || "—";
+        if (els.prevQty) els.prevQty.textContent = qty ? fmt(qty) : "—";
+        if (els.prevPrice) els.prevPrice.textContent = price ? fmt(price) : "—";
+        if (els.prevGross) els.prevGross.textContent = gross ? fmt(gross) + " " + ccy : "—";
+        if (els.prevCharges) els.prevCharges.textContent = totalCharges ? fmt(totalCharges) + " " + ccy : "—";
+        if (els.prevNet) els.prevNet.textContent = net ? fmt(net) + " " + ccy : "—";
 
-{# Fee Engine AJAX + UI updates #}
-<script>
-(function() {
-    'use strict';
+        if (els.prevCash) {
+            if (!side || !gross) {
+                els.prevCash.textContent = "—";
+                els.prevCash.className = "summary-value";
+            } else if (side === "BUY") {
+                els.prevCash.textContent = "-" + fmt(net) + " " + ccy;
+                els.prevCash.className = "summary-value negative";
+            } else {
+                els.prevCash.textContent = "+" + fmt(net) + " " + ccy;
+                els.prevCash.className = "summary-value positive";
+            }
+        }
 
-    let autoChargesData = [];
+        if (els.prevEffect) {
+            if (!side || !gross) {
+                els.prevEffect.textContent = "Enter trade economics and charges to preview the booking effect.";
+            } else if (side === "BUY") {
+                els.prevEffect.textContent = "BUY — will create one settlement cash outflow event and open one new tax lot. Charges are added to total acquisition cost.";
+            } else if (side === "SELL") {
+                els.prevEffect.textContent = "SELL — will create one settlement cash inflow event and consume existing FIFO lots. Charges reduce net proceeds.";
+            }
+        }
 
+        // Update ticker stats
+        if (els.tickerGross) els.tickerGross.textContent = gross ? fmt(gross) + " " + ccy : "—";
+        if (els.tickerCharges) els.tickerCharges.textContent = totalCharges ? fmt(totalCharges) + " " + ccy : "—";
+        if (els.tickerNet) els.tickerNet.textContent = net ? fmt(net) + " " + ccy : "—";
+    }
+
+    function calculateSettleDate() {
+        if (!els.tradeDt || !els.settleDt || !els.settleOffset) return;
+        if (!els.tradeDt.value) return;
+
+        let tradeDate = new Date(els.tradeDt.value);
+        let offset = parseInt(els.settleOffset.value);
+        
+        if (isNaN(offset)) return;
+
+        let settleDate = new Date(tradeDate);
+        let daysAdded = 0;
+        
+        while (daysAdded < offset) {
+            settleDate.setDate(settleDate.getDate() + 1);
+            // Skip Sat (6) and Sun (0)
+            if (settleDate.getDay() !== 0 && settleDate.getDay() !== 6) {
+                daysAdded++;
+            }
+        }
+        
+        // Format as YYYY-MM-DD
+        els.settleDt.value = settleDate.toISOString().split('T')[0];
+    }
+
+    function updateSettleOffset() {
+        if (!els.execVenue || !els.settleOffset) return;
+        const exchangeId = els.execVenue.value;
+        const offset = exchangesData[exchangeId];
+        if (offset !== undefined) {
+            els.settleOffset.value = offset;
+            calculateSettleDate();
+        }
+    }
+
+    // Attach basic input listeners for recalculation
+    function bindCalculationListeners() {
+        [els.qty, els.price].forEach(el => {
+            if (el) el.addEventListener("input", calculateTotals);
+        });
+        if (els.tradeDt) els.tradeDt.addEventListener("change", calculateSettleDate);
+        if (els.settleOffset) els.settleOffset.addEventListener("change", calculateSettleDate);
+        if (els.execVenue) els.execVenue.addEventListener("change", () => { updateSettleOffset(); calculateTotals(); });
+        [els.side, els.tradeCcy, els.settleCcy].forEach(el => {
+            if (el) el.addEventListener("change", () => { syncSettleCcy(); calculateTotals(); });
+        });
+    }
+
+    // Manual Charge Recalculation Listener
+    function bindManualChargeListeners() {
+        // Use event delegation for all inputs inside formset container
+        if (els.chargeFormset) {
+            els.chargeFormset.addEventListener('input', function(e) {
+                if (e.target && e.target.classList.contains('charge-amount')) {
+                    calculateTotals();
+                }
+            });
+        }
+    }
+
+    // Auto Charges (Fee Engine)
+    async function fetchAvailableCash() {
+        const portfolioId = els.portfolio?.value;
+        const tradeDate = els.tradeDt?.value;
+        
+        if (!portfolioId) {
+            if (els.prevAvailableCash) els.prevAvailableCash.textContent = "—";
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({ portfolio_id: portfolioId });
+            if (tradeDate) params.append('effective_dt', tradeDate);
+
+            const response = await fetch(`/ibor/cash/balance/?${params}`);
+            const data = await response.json();
+
+            if (data.ok && els.prevAvailableCash) {
+                els.prevAvailableCash.textContent = fmt(parseFloat(data.balance)) + ' PKR';
+            }
+        } catch (err) {
+            console.error('Cash balance fetch error:', err);
+        }
+    }
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -501,16 +683,18 @@
     }
 
     async function fetchAutoCharges() {
-        const tradeDt = document.getElementById('id_trade_dt')?.value;
-        const quantity = document.getElementById('id_quantity')?.value;
-        const price = document.getElementById('id_price')?.value;
-        const side = document.getElementById('id_side')?.value;
-        const brokerId = document.getElementById('id_broker')?.value;
-        const execVenueId = document.getElementById('id_exec_venue')?.value;
+        const tradeDt = els.tradeDt?.value;
+        const quantity = els.qty?.value;
+        const price = els.price?.value;
+        const side = els.side?.value;
+        const brokerId = els.broker?.value;
+        const execVenueId = els.execVenue?.value;
 
         if (!tradeDt || !quantity || !price || !side) {
-            document.getElementById('auto-charges-rows').innerHTML = '';
-            document.getElementById('auto-charges-placeholder').style.display = 'block';
+            if (els.autoChargesRows) els.autoChargesRows.innerHTML = '';
+            if (els.autoChargesPlaceholder) els.autoChargesPlaceholder.style.display = 'block';
+            autoChargesData = [];
+            calculateTotals();
             return;
         }
 
@@ -530,22 +714,29 @@
             if (data.message === 'OK' && data.charges && data.charges.length > 0) {
                 autoChargesData = data.charges;
                 renderAutoCharges(data);
-                updateTotals();
+                calculateTotals();
             } else {
-                document.getElementById('auto-charges-rows').innerHTML =
-                    `<p style="color: #f59e0b; margin: 0;">⚠️ ${data.message || 'No fee schedule found'}</p>`;
-                document.getElementById('auto-charges-placeholder').style.display = 'none';
+                autoChargesData = [];
+                if (els.autoChargesRows) {
+                    els.autoChargesRows.innerHTML = `<p style="color: #f59e0b; margin: 0;">⚠️ ${data.message || 'No fee schedule found'}</p>`;
+                }
+                if (els.autoChargesPlaceholder) els.autoChargesPlaceholder.style.display = 'none';
+                calculateTotals();
             }
         } catch (err) {
             console.error('Fee engine error:', err);
-            document.getElementById('auto-charges-rows').innerHTML =
-                '<p style="color: #ef4444; margin: 0;">❌ Error fetching charges</p>';
-            document.getElementById('auto-charges-placeholder').style.display = 'none';
+            autoChargesData = [];
+            if (els.autoChargesRows) {
+                els.autoChargesRows.innerHTML = '<p style="color: #ef4444; margin: 0;">❌ Error fetching charges</p>';
+            }
+            if (els.autoChargesPlaceholder) els.autoChargesPlaceholder.style.display = 'none';
+            calculateTotals();
         }
     }
 
     function renderAutoCharges(data) {
-        document.getElementById('auto-charges-placeholder').style.display = 'none';
+        if (!els.autoChargesRows || !els.autoChargesHidden) return;
+        if (els.autoChargesPlaceholder) els.autoChargesPlaceholder.style.display = 'none';
 
         let html = `
             <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
@@ -590,233 +781,102 @@
             </table>
         `;
 
-        document.getElementById('auto-charges-rows').innerHTML = html;
-        document.getElementById('auto-charges-hidden').innerHTML = hiddenHtml + `<input type="hidden" name="auto_charges_count" value="${data.charges.length}">`;
+        els.autoChargesRows.innerHTML = html;
+        els.autoChargesHidden.innerHTML = hiddenHtml + `<input type="hidden" name="auto_charges_count" value="${data.charges.length}">`;
     }
 
-    function updateTotals() {
-        const quantity = parseFloat(document.getElementById('id_quantity')?.value) || 0;
-        const price = parseFloat(document.getElementById('id_price')?.value) || 0;
-        const side = document.getElementById('id_side')?.value || 'BUY';
-
-        const gross = quantity * price;
-        let autoTotal = 0;
-        autoChargesData.forEach(c => autoTotal += parseFloat(c.amount) || 0);
-
-        let manualTotal = 0;
-        document.querySelectorAll('.charge-row input[name*="-amount"]').forEach(input => {
-            manualTotal += parseFloat(input.value) || 0;
+    function bindAutoChargeFetchListeners() {
+        const debouncedFetch = debounce(fetchAutoCharges, 500);
+        [els.tradeDt, els.qty, els.price, els.side, els.broker, els.execVenue].forEach(field => {
+            if (field) {
+                field.addEventListener('input', debouncedFetch);
+                field.addEventListener('change', debouncedFetch);
+            }
         });
-
-        const totalCharges = autoTotal + manualTotal;
-        const net = side === 'BUY' ? gross + totalCharges : gross - totalCharges;
-
-        const tickerGross = document.getElementById('ticker-gross');
-        const tickerCharges = document.getElementById('ticker-charges');
-        const tickerNet = document.getElementById('ticker-net');
-
-        if (tickerGross) tickerGross.textContent = gross.toFixed(2);
-        if (tickerCharges) tickerCharges.textContent = totalCharges.toFixed(4);
-        if (tickerNet) tickerNet.textContent = net.toFixed(2);
-
-        const netField = document.getElementById('id_net_amount');
-        if (netField) netField.value = net.toFixed(4);
     }
 
-    const debouncedFetch = debounce(fetchAutoCharges, 500);
+    // Formset Management (Manual Charges)
+    function setupFormsetManagement() {
+        if (!els.chargeFormset || !els.addChargeBtn || !els.totalForms) return;
 
-    ['id_trade_dt', 'id_quantity', 'id_price', 'id_side', 'id_broker', 'id_exec_venue'].forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', debouncedFetch);
-            field.addEventListener('change', debouncedFetch);
-        }
-    });
+        const FORMSET_PREFIX = 'charges';
 
-    document.querySelectorAll('.charge-row input[name*="-amount"]').forEach(input => {
-        input.addEventListener('input', updateTotals);
-    });
+        els.addChargeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
 
-    fetchAutoCharges();
-})();
-</script>
+            const formIdx = parseInt(els.totalForms.value) || 0;
+            const existingForms = els.chargeFormset.querySelectorAll('.charge-row');
+            let newForm;
 
-{% endblock %}
+            if (existingForms.length > 0) {
+                const lastForm = existingForms[existingForms.length - 1];
+                newForm = lastForm.cloneNode(true);
 
-{% block sidebar %}
-<div class="sidebar-section">
-    <div class="sidebar-section-title">Live preview</div>
-    <div class="summary-list">
-        <div class="summary-item">
-            <span class="summary-label">Side</span>
-            <span class="summary-value" id="prev-side">—</span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">Quantity</span>
-            <span class="summary-value" id="prev-qty">—</span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">Price</span>
-            <span class="summary-value" id="prev-price">—</span>
-        </div>
-        <div class="summary-divider"></div>
-        <div class="summary-item">
-            <span class="summary-label">Gross amount</span>
-            <span class="summary-value" id="prev-gross">—</span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">Total charges</span>
-            <span class="summary-value" id="prev-charges">—</span>
-        </div>
-        <div class="summary-divider"></div>
-        <div class="summary-item">
-            <span class="summary-label">Net amount</span>
-            <span class="summary-value" id="prev-net">—</span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">Settlement cash</span>
-            <span class="summary-value" id="prev-cash">—</span>
-        </div>
-    </div>
-</div>
-<div class="sidebar-section">
-    <div class="sidebar-section-title">Booking effect</div>
-    <div class="preview-box" id="prev-effect">
-        Enter trade economics and charges to preview the booking effect.
-    </div>
-</div>
-<div class="sidebar-section">
-    <div class="sidebar-section-title">Charge mapping guide</div>
-    <div class="preview-box">
-        <strong>COMM</strong> — Broker commission<br>
-        <strong>LEVY</strong> — PSX / CDC / exchange levies<br>
-        <strong>VAT</strong> — SST / GST / VAT<br>
-        <strong>STAMP</strong> — Stamp duty<br>
-        <strong>TAX</strong> — Withholding or advance tax<br>
-        <strong>OTHER</strong> — Exceptional items
-    </div>
-</div>
-<div class="sidebar-actions">
-    <button type="submit" name="submit_action" value="book" class="btn btn-primary">
-        Save &amp; Book
-    </button>
-    <button type="submit" name="submit_action" value="save" class="btn btn-secondary">
-        Save only
-    </button>
-</div>
-{% endblock %}
+                newForm.querySelectorAll('input[type="text"], input[type="number"], select').forEach(field => {
+                    if (!field.name.includes('DELETE')) {
+                        field.value = '';
+                    }
+                });
 
-{% block extra_scripts %}
-<script>
-(function () {
-    var qtyEl       = document.getElementById("id_quantity");
-    var priceEl     = document.getElementById("id_price");
-    var sideEl      = document.getElementById("id_side");
-    var tradeCcyEl  = document.getElementById("id_trade_ccy");
-    var settleCcyEl = document.getElementById("id_settle_ccy");
-    var grossEl     = document.getElementById("id_gross_amount");
-    var netEl       = document.getElementById("id_net_amount");
-    var prevSide    = document.getElementById("prev-side");
-    var prevQty     = document.getElementById("prev-qty");
-    var prevPrice   = document.getElementById("prev-price");
-    var prevGross   = document.getElementById("prev-gross");
-    var prevCharges = document.getElementById("prev-charges");
-    var prevNet     = document.getElementById("prev-net");
-    var prevCash    = document.getElementById("prev-cash");
-    var prevEffect  = document.getElementById("prev-effect");
-    var tickerGross   = document.getElementById("ticker-gross");
-    var tickerCharges = document.getElementById("ticker-charges");
-    var tickerNet     = document.getElementById("ticker-net");
+                newForm.querySelectorAll('[name], [for], [id]').forEach(elem => {
+                    if (elem.name) elem.name = elem.name.replace(/-\d+-/, `-${formIdx}-`);
+                    if (elem.id) elem.id = elem.id.replace(/_\d+_/, `_${formIdx}_`);
+                    if (elem.getAttribute('for')) elem.setAttribute('for', elem.getAttribute('for').replace(/_\d+_/, `_${formIdx}_`));
+                });
+            } else {
+                newForm = document.createElement('div');
+                newForm.className = 'charge-row';
+                newForm.style.cssText = 'display: grid; grid-template-columns: 1.5fr 2fr 1fr 1.5fr 1fr auto; gap: 1rem; align-items: end; margin-bottom: 1rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 6px;';
+                newForm.innerHTML = `
+                    <div class="form-field">
+                        <label for="id_${FORMSET_PREFIX}-${formIdx}-charge_type_cd" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Charge Type</label>
+                        <select name="${FORMSET_PREFIX}-${formIdx}-charge_type_cd" id="id_${FORMSET_PREFIX}-${formIdx}-charge_type_cd"></select>
+                    </div>
+                    <div class="form-field">
+                        <label for="id_${FORMSET_PREFIX}-${formIdx}-description" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Description</label>
+                        <input type="text" name="${FORMSET_PREFIX}-${formIdx}-description" id="id_${FORMSET_PREFIX}-${formIdx}-description">
+                    </div>
+                    <div class="form-field">
+                        <label for="id_${FORMSET_PREFIX}-${formIdx}-rate" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Rate (%)</label>
+                        <input type="number" name="${FORMSET_PREFIX}-${formIdx}-rate" id="id_${FORMSET_PREFIX}-${formIdx}-rate" step="0.0001">
+                    </div>
+                    <div class="form-field">
+                        <label for="id_${FORMSET_PREFIX}-${formIdx}-amount" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Amount</label>
+                        <input type="number" name="${FORMSET_PREFIX}-${formIdx}-amount" id="id_${FORMSET_PREFIX}-${formIdx}-amount" step="0.0001" class="charge-amount">
+                    </div>
+                    <div class="form-field">
+                        <label for="id_${FORMSET_PREFIX}-${formIdx}-cost_ccy" style="display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.25rem;">Ccy</label>
+                        <select name="${FORMSET_PREFIX}-${formIdx}-cost_ccy" id="id_${FORMSET_PREFIX}-${formIdx}-cost_ccy"></select>
+                    </div>
+                    <div class="form-field" style="padding-bottom: 0.25rem;">
+                        <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.875rem; color: #ef4444;">
+                            <input type="checkbox" name="${FORMSET_PREFIX}-${formIdx}-DELETE">
+                            <span>🗑️ Remove</span>
+                        </label>
+                    </div>
+                    <div style="display: none;">
+                        <input type="hidden" name="${FORMSET_PREFIX}-${formIdx}-id">
+                    </div>
+                `;
+            }
 
-    function toNum(val) { var n = parseFloat(val); return isFinite(n) ? n : 0; }
-    function fmt(n) { return n.toLocaleString("en-US", {minimumFractionDigits:4, maximumFractionDigits:4}); }
-    function ccyText() {
-        if (!tradeCcyEl) return "";
-        var opt = tradeCcyEl.selectedOptions && tradeCcyEl.selectedOptions[0];
-        return opt ? opt.text : "";
+            els.chargeFormset.insertBefore(newForm, els.addChargeBtn);
+            els.totalForms.value = formIdx + 1;
+        });
     }
-    function sumCharges() {
-        var total = 0;
-        document.querySelectorAll(".charge-amount").forEach(function(el) { total += toNum(el.value); });
-        return total;
-    }
-    function syncSettleCcy() {
-        if (tradeCcyEl && settleCcyEl && !settleCcyEl.value) settleCcyEl.value = tradeCcyEl.value;
-    }
-    function update() {
-        var qty     = toNum(qtyEl && qtyEl.value);
-        var price   = toNum(priceEl && priceEl.value);
-        var charges = sumCharges();
-        var side    = sideEl ? sideEl.value : "";
-        var ccy     = ccyText();
-        var gross   = qty * price;
-        var net     = side === "BUY" ? gross + charges : side === "SELL" ? gross - charges : gross;
-        if (grossEl) grossEl.value = gross ? fmt(gross) : "";
-        if (netEl)   netEl.value   = net   ? fmt(net)   : "";
-        if (prevSide)    prevSide.textContent    = side  || "—";
-        if (prevQty)     prevQty.textContent     = qty   ? fmt(qty)   : "—";
-        if (prevPrice)   prevPrice.textContent   = price ? fmt(price) : "—";
-        if (prevGross)   prevGross.textContent   = gross ? fmt(gross) + " " + ccy : "—";
-        if (prevCharges) prevCharges.textContent = fmt(charges) + " " + ccy;
-        if (prevNet)     prevNet.textContent     = net   ? fmt(net)   + " " + ccy : "—";
-        if (prevCash) {
-            if (!side || !gross) { prevCash.textContent = "—"; prevCash.className = "summary-value"; }
-            else if (side === "BUY") { prevCash.textContent = "-" + fmt(net) + " " + ccy; prevCash.className = "summary-value negative"; }
-            else { prevCash.textContent = "+" + fmt(net) + " " + ccy; prevCash.className = "summary-value positive"; }
-        }
-        if (prevEffect) {
-            if (!side || !gross) { prevEffect.textContent = "Enter trade economics and charges to preview the booking effect."; }
-            else if (side === "BUY") { prevEffect.textContent = "BUY — will create one settlement cash outflow event and open one new tax lot. Charges are added to total acquisition cost."; }
-            else if (side === "SELL") { prevEffect.textContent = "SELL — will create one settlement cash inflow event and consume existing FIFO lots. Charges reduce net proceeds."; }
-        }
-        if (tickerGross)   tickerGross.textContent   = gross   ? fmt(gross)   + " " + ccy : "—";
-        if (tickerCharges) tickerCharges.textContent = charges ? fmt(charges) + " " + ccy : "—";
-        if (tickerNet)     tickerNet.textContent     = net     ? fmt(net)     + " " + ccy : "—";
-    }
-    [qtyEl, priceEl].forEach(function(el) { if (el) el.addEventListener("input", update); });
-    [sideEl, tradeCcyEl, settleCcyEl].forEach(function(el) {
-        if (el) el.addEventListener("change", function() { syncSettleCcy(); update(); });
-    });
-    document.querySelectorAll(".charge-amount").forEach(function(el) { el.addEventListener("input", update); });
-    syncSettleCcy();
-    update();
-}());
 
-// Fee Schedule Auto-Population Module
-(function() {
-    'use strict';
-    
-    // Get form field elements
-    const brokerField = document.getElementById('id_broker');
-    const exchangeField = document.getElementById('id_exec_venue');
-    const assetClassField = document.getElementById('id_asset_class');
-    const currencyField = document.getElementById('id_trade_ccy');
-    const sharePriceField = document.getElementById('id_price');
-    const tradeDateField = document.getElementById('id_trade_dt');
-    const sideField = document.getElementById('id_side');
-    
-    if (!brokerField || !exchangeField) {
-        console.log('Fee auto-population: Required fields not found');
-        return;
-    }
-    
-    // Function to fetch and populate fee rules
+    // Fee Schedule Auto-Population
     function fetchAndPopulateFeeRules() {
-        const brokerId = brokerField.value;
-        const exchangeId = exchangeField.value;
-        const assetClassId = assetClassField ? assetClassField.value : '';
-        const currencyId = currencyField ? currencyField.value : '';
-        const sharePrice = sharePriceField ? sharePriceField.value : '';
-        const tradeDate = tradeDateField ? tradeDateField.value : '';
-        const side = sideField ? sideField.value : '';
+        const brokerId = els.broker?.value;
+        const exchangeId = els.execVenue?.value;
+        const assetClassId = els.assetClass?.value || '';
+        const currencyId = els.tradeCcy?.value || '';
+        const sharePrice = els.price?.value || '';
+        const tradeDate = els.tradeDt?.value || '';
+        const side = els.side?.value || '';
         
-        // Check if we have minimum required fields
-        if (!brokerId || !exchangeId) {
-            console.log('Fee auto-population: Broker and Exchange required');
-            return;
-        }
+        if (!brokerId || !exchangeId) return;
         
-        // Build query parameters
         const params = new URLSearchParams();
         params.append('broker_id', brokerId);
         params.append('exec_venue_id', exchangeId);
@@ -827,78 +887,63 @@
         if (side) params.append('side', side);
         params.append('source_system', 'IBOR');
         
-        // Make AJAX call
         fetch('/ibor/fees/schedule-rules/?' + params.toString())
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
+            .then(response => response.ok ? response.json() : Promise.reject('Network error'))
             .then(data => {
                 if (data.success && data.fee_rules && data.fee_rules.length > 0) {
                     populateFeeRules(data.fee_rules);
-                    console.log('Fee auto-population: Loaded ' + data.count + ' fee rules');
-                } else {
-                    console.log('Fee auto-population: No fee rules found');
                 }
             })
-            .catch(error => {
-                console.error('Fee auto-population error:', error);
-            });
+            .catch(error => console.error('Fee auto-population error:', error));
     }
-    
-    // Function to populate fee rules into the formset
+
     function populateFeeRules(feeRules) {
-        // Find the charge formset container
-        const chargeFormset = document.querySelector('.charge-formset, #charge-formset, [data-formset="charges"]');
-        
-        if (!chargeFormset) {
-            console.error('Fee auto-population: Charge formset not found');
-            return;
-        }
+        if (!els.chargeFormset) return;
         
         feeRules.forEach((rule, index) => {
-            // Try to find existing form row or add a new one
-            let formRow = chargeFormset.querySelector('[data-form-index="' + index + '"]');
-            
+            let formRow = els.chargeFormset.querySelector(`[data-form-index="${index}"]`);
             if (!formRow) {
-                // Look for empty forms or create mechanism to add forms
-                const allForms = chargeFormset.querySelectorAll('.charge-form-row, [class*="charge"][class*="form"]');
+                const allForms = els.chargeFormset.querySelectorAll('.charge-row');
                 formRow = allForms[index];
             }
             
             if (formRow) {
-                // Populate the form fields
-                const chargeTypeField = formRow.querySelector('[name*="charge_type_cd"], #id_charges-' + index + '-charge_type_cd');
-                const descriptionField = formRow.querySelector('[name*="description"], #id_charges-' + index + '-description');
-                const calcMethodField = formRow.querySelector('[name*="calc_method"], #id_charges-' + index + '-calc_method');
-                const rateField = formRow.querySelector('[name*="rate"], #id_charges-' + index + '-rate');
+                const chargeTypeField = formRow.querySelector(`[name*="charge_type_cd"], #id_charges-${index}-charge_type_cd`);
+                const descriptionField = formRow.querySelector(`[name*="description"], #id_charges-${index}-description`);
+                const calcMethodField = formRow.querySelector(`[name*="calc_method"], #id_charges-${index}-calc_method`);
+                const rateField = formRow.querySelector(`[name*="rate"], #id_charges-${index}-rate`);
                 
-                if (chargeTypeField && rule.charge_type_cd) {
-                    chargeTypeField.value = rule.charge_type_cd;
-                }
-                if (descriptionField && rule.description) {
-                    descriptionField.value = rule.description;
-                }
-                if (calcMethodField && rule.calc_method) {
-                    calcMethodField.value = rule.calc_method;
-                }
-                if (rateField && rule.rate) {
-                    rateField.value = rule.rate;
-                }
+                if (chargeTypeField && rule.charge_type_cd) chargeTypeField.value = rule.charge_type_cd;
+                if (descriptionField && rule.description) descriptionField.value = rule.description;
+                if (calcMethodField && rule.calc_method) calcMethodField.value = rule.calc_method;
+                if (rateField && rule.rate) rateField.value = rule.rate;
             }
         });
+        calculateTotals();
     }
+
+    function bindFeeAutoPopListeners() {
+        [els.broker, els.execVenue, els.assetClass, els.tradeCcy].forEach(el => {
+            if (el) el.addEventListener('change', fetchAndPopulateFeeRules);
+        });
+        if (els.price) els.price.addEventListener('blur', fetchAndPopulateFeeRules);
+        if (els.portfolio) els.portfolio.addEventListener('change', fetchAvailableCash);
+        if (els.tradeDt) els.tradeDt.addEventListener('change', fetchAvailableCash);
+    }
+
+    // Init
+    syncSettleCcy();
+    calculateTotals();
+    updateSettleOffset();
+    bindCalculationListeners();
+    bindManualChargeListeners();
+    bindAutoChargeFetchListeners();
+    setupFormsetManagement();
+    bindFeeAutoPopListeners();
     
-    // Attach event listeners
-    if (brokerField) brokerField.addEventListener('change', fetchAndPopulateFeeRules);
-    if (exchangeField) exchangeField.addEventListener('change', fetchAndPopulateFeeRules);
-    if (assetClassField) assetClassField.addEventListener('change', fetchAndPopulateFeeRules);
-    if (currencyField) currencyField.addEventListener('change', fetchAndPopulateFeeRules);
-    if (sharePriceField) sharePriceField.addEventListener('blur', fetchAndPopulateFeeRules);
-    
-    console.log('Fee Schedule Auto-Population Module initialized');
+    // Initial fetch of auto charges if fields are already filled
+    fetchAutoCharges();
+
 })();
 </script>
 {% endblock %}
