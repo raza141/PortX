@@ -10,6 +10,9 @@ from operations.ibor.models.lot import IborLotConsumption, IborTaxLot
 from operations.ibor.models.trade import IborSide
 from operations.ibor.services.validators import TradeValidationResult
 
+# Define a standard rounding precision
+PRECISION_4 = Decimal("0.0001")
+
 
 @dataclass(frozen=True)
 class LotBookingResult:
@@ -37,7 +40,7 @@ class LotEngine:
         trade = validation.trade
 
         total_cost = abs(trade.net_amount)
-        unit_cost = total_cost / trade.quantity
+        unit_cost = (total_cost / trade.quantity).quantize(PRECISION_4)
 
         return IborTaxLot.objects.create(
             portfolio_id=trade.portfolio_id,
@@ -72,7 +75,7 @@ class LotEngine:
             raise ValidationError({"quantity": ["No open lots available for this sell trade."]})
 
         net_proceeds_total = abs(trade.net_amount)
-        sell_unit_proceeds = net_proceeds_total / trade.quantity
+        sell_unit_proceeds = (net_proceeds_total / trade.quantity).quantize(PRECISION_4)
 
         with transaction.atomic():
             for lot in open_lots:
@@ -80,9 +83,9 @@ class LotEngine:
                     break
 
                 consumed_qty = min(remaining_to_sell, lot.remaining_qty)
-                cost_basis = consumed_qty * lot.unit_cost
-                proceeds_amt = consumed_qty * sell_unit_proceeds
-                realized_pnl = proceeds_amt - cost_basis
+                cost_basis = (consumed_qty * lot.unit_cost).quantize(PRECISION_4)
+                proceeds_amt = (consumed_qty * sell_unit_proceeds).quantize(PRECISION_4)
+                realized_pnl = (proceeds_amt - cost_basis).quantize(PRECISION_4)
 
                 IborLotConsumption.objects.create(
                     sell_trade=trade,

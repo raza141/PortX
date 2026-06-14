@@ -39,18 +39,18 @@ class IborTaxLot(IborTimeStampedModel):
 
     open_qty = models.DecimalField(
         max_digits=28,
-        decimal_places=10,
+        decimal_places=4,
         help_text="The original quantity that this lot was created with..",
     )
     remaining_qty = models.DecimalField(
         max_digits=28,
-        decimal_places=10,
+        decimal_places=4,
         help_text="Remaining lot quantity after FIFO consumptions.",
     )
 
     unit_cost = models.DecimalField(
         max_digits=28,
-        decimal_places=10,
+        decimal_places=4,
         help_text="Unit cost including allocated charges (in cost_ccy).",
     )
     cost_ccy = models.ForeignKey(
@@ -58,6 +58,12 @@ class IborTaxLot(IborTimeStampedModel):
         on_delete=models.PROTECT,
         related_name="ibor_lot_cost_ccy",
         help_text="Cost currency ISO3 (typically portfolio base or trade currency per policy).",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text="Whether this lot is active. Set to False if cancelled or fully reversed."
     )
 
     class Meta:
@@ -100,12 +106,12 @@ class IborLotConsumption(IborTimeStampedModel):
     )
     consumed_qty = models.DecimalField(
         max_digits=28,
-        decimal_places=10,
+        decimal_places=4,
         help_text="Quantity consumed from this lot (FIFO).",
     )
     unit_cost = models.DecimalField(
         max_digits=28,
-        decimal_places=10,
+        decimal_places=4,
         help_text="Unit cost used for this consumption (copied from lot at time of consumption).",
     )
     cost_ccy = models.ForeignKey(
@@ -116,12 +122,12 @@ class IborLotConsumption(IborTimeStampedModel):
     )
     cost_basis = models.DecimalField(
         max_digits=28,
-        decimal_places=10,
+        decimal_places=4,
         help_text="Total cost basis consumed = consumed_qty * unit_cost.",
     )
     proceeds_amt = models.DecimalField(
         max_digits=28,
-        decimal_places=10,
+        decimal_places=4,
         null=True,
         blank=True,
         help_text="Allocated net proceeds for this consumed slice (in cost_ccy).",
@@ -129,7 +135,7 @@ class IborLotConsumption(IborTimeStampedModel):
 
     rlzd_pnl_amt = models.DecimalField(
         max_digits=28,
-        decimal_places=10,
+        decimal_places=4,
         null=True,
         blank=True,
         help_text="Realized PnL = proceeds_amt - cost_basis (in cost_ccy).",

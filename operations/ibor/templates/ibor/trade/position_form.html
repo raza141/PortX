@@ -15,64 +15,80 @@
         <table class="table" style="width: 100%; text-align: left; border-collapse: collapse;">
             <thead>
                 <tr style="border-bottom: 2px solid #eaeaea;">
-                    <th style="padding: 12px 8px;">Instrument</th>
-                    <th style="padding: 12px 8px;">Quantity</th>
-                    <th style="padding: 12px 8px;">Avg Cost</th>
-                    <th style="padding: 12px 8px;">Current Price</th>
-                    <th style="padding: 12px 8px;">Unrealized P&L</th>
-                    <th style="padding: 12px 8px;">Actions</th>
+                    <th style="padding: 12px 8px;">Ticker / Instrument</th>
+                    <th style="padding: 12px 8px; text-align: right;">Total Qty</th>
+                    <th style="padding: 12px 8px; text-align: right;">Avg Cost</th>
+                    <th style="padding: 12px 8px; text-align: right;">Cost Basis (AUM)</th>
+                    <th style="padding: 12px 8px; text-align: center;">Breakdown</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Example Row 1: Aggregate Position -->
-                <tr style="border-bottom: 1px solid #eaeaea;">
-                    <td style="padding: 12px 8px; font-weight: 600;">Apple Inc. (AAPL)</td>
-                    <td style="padding: 12px 8px;">1,000</td>
-                    <td style="padding: 12px 8px;">$150.00</td>
-                    <td style="padding: 12px 8px;">$175.00</td>
-                    <td style="padding: 12px 8px; color: green; font-weight: bold;">+$25,000.00</td>
-                    <td style="padding: 12px 8px;">
-                        <button type="button" class="btn btn-sm btn-outline" onclick="toggleLots('lots-aapl')">
-                            View Lots
+                {% for holding in holdings %}
+                <!-- Level 1: Global Instrument Aggregate -->
+                <tr style="border-bottom: 1px solid #eee; background: var(--surface-2);">
+                    <td style="padding: 12px 8px; font-weight: 700; color: var(--primary);">
+                        {{ holding.instrument.ticker }} 
+                        <span style="font-weight: 400; color: var(--text-muted); margin-left: 8px;">{{ holding.instrument.security.name }}</span>
+                    </td>
+                    <td style="padding: 12px 8px; text-align: right; font-weight: 600;">{{ holding.total_qty|floatformat:0 }}</td>
+                    <td style="padding: 12px 8px; text-align: right;">${{ holding.avg_cost|floatformat:2 }}</td>
+                    <td style="padding: 12px 8px; text-align: right; font-weight: 600;">${{ holding.total_cost|floatformat:2 }}</td>
+                    <td style="padding: 12px 8px; text-align: center;">
+                        <button type="button" class="btn btn-sm btn-secondary" style="min-height: 30px;" onclick="toggleLots('clients-{{ holding.instrument.id }}')">
+                            By Client
                         </button>
                     </td>
                 </tr>
                 
-                <!-- Example Row 1: Lot Breakdown (Hidden by default) -->
-                <tr id="lots-aapl" style="display: none; background-color: #f9f9fa;">
-                    <td colspan="6" style="padding: 16px;">
-                        <div style="font-size: 0.9em; margin-bottom: 8px; font-weight: 600; color: #555;">Tax Lot Breakdown</div>
-                        <table style="width: 100%; border: 1px solid #ddd; border-collapse: collapse; background: #fff;">
-                            <thead>
-                                <tr style="background-color: #f1f1f1;">
-                                    <th style="padding: 8px; border: 1px solid #ddd;">Lot ID</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">Open Date</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">Orig. Qty</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">Rem. Qty</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">Cost Basis</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">LOT-1001</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">Jan 1, 2023</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">400</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">400</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">$140.00</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">LOT-1045</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">Feb 1, 2023</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">600</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">600</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">$156.66</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- Level 2: Client/Portfolio Breakdown (Hidden) -->
+                <tr id="clients-{{ holding.instrument.id }}" style="display: none;">
+                    <td colspan="5" style="padding: 0 0 20px 40px; background: #fafafa;">
+                        <div style="padding: 10px; font-weight: 700; font-size: 11px; color: var(--text-light); text-transform: uppercase;">Client Holdings</div>
+                        {% for p_id, p_data in holding.portfolios.items %}
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 100px; padding: 10px; border-bottom: 1px solid #eee; align-items: center;">
+                            <div style="font-weight: 600;">
+                                {{ p_data.portfolio.port_nm }} 
+                                <small style="color:var(--text-muted)">({{ p_data.portfolio.mandate.investor.name }})</small>
+                            </div>
+                            <div style="text-align: right;">{{ p_data.qty|floatformat:0 }}</div>
+                            <div style="text-align: right;">${{ p_data.avg_cost|floatformat:2 }}</div>
+                            <div style="text-align: right; font-weight: 600;">${{ p_data.cost|floatformat:2 }}</div>
+                            <div style="text-align: center;">
+                                <button type="button" class="btn btn-sm btn-outline" style="min-height: 24px; font-size: 10px;" onclick="toggleLots('lots-{{ holding.instrument.id }}-{{ p_id }}')">Lots</button>
+                            </div>
+                        </div>
+
+                        <!-- Level 3: Detailed Tax Lots -->
+                        <div id="lots-{{ holding.instrument.id }}-{{ p_id }}" style="display: none; padding: 10px 10px 10px 30px; background: #fff;">
+                            <table style="width: 100%; font-size: 12px; border: 1px solid #eee;">
+                                <thead style="background: #f1f1f1;">
+                                    <tr>
+                                        <th style="padding: 4px;">Acquired</th>
+                                        <th style="padding: 4px; text-align: right;">Rem. Qty</th>
+                                        <th style="padding: 4px; text-align: right;">Unit Cost</th>
+                                        <th style="padding: 4px; text-align: right;">Total Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lot in p_data.lots %}
+                                    <tr>
+                                        <td style="padding: 4px;">{{ lot.acquired_dt|date:"d M Y" }}</td>
+                                        <td style="padding: 4px; text-align: right;">{{ lot.remaining_qty|floatformat:0 }}</td>
+                                        <td style="padding: 4px; text-align: right;">${{ lot.unit_cost|floatformat:2 }}</td>
+                                        <td style="padding: 4px; text-align: right;">${{ lot.total_cost|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endfor %}
                     </td>
                 </tr>
-
-                <!-- Add more rows dynamically via Django template tags (e.g., ) later -->
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="padding: 40px; text-align: center; color: var(--text-muted);">No active holdings found.</td>
+                </tr>
+                {% endfor %}
                 
             </tbody>
         </table>
@@ -86,15 +102,15 @@
     <div class="summary-list">
         <div class="summary-item">
             <span class="summary-label">Total AUM</span>
-            <span class="summary-value" id="total-aum">$1,250,000.00</span>
+            <span class="summary-value" id="total-aum">${{ total_aum|floatformat:2 }}</span>
         </div>
         <div class="summary-item">
             <span class="summary-label">Cash Balance</span>
-            <span class="summary-value" id="cash-balance">$150,000.00</span>
+            <span class="summary-value" id="cash-balance">${{ total_cash|floatformat:2 }}</span>
         </div>
         <div class="summary-item">
             <span class="summary-label">Market Value</span>
-            <span class="summary-value" id="market-value">$1,100,000.00</span>
+            <span class="summary-value" id="market-value">${{ total_aum|floatformat:2 }}</span>
         </div>
     </div>
 </div>

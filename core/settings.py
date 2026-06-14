@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     "django.contrib.admin",
+    "django_extensions", # for shell working (it avooid importing)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
