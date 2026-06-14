@@ -24,7 +24,6 @@ class RM(models.Model):
                                help_text="Team, e.g. Private Wealth")
     branch_nm = models.CharField(max_length=80, null=True, blank=True, db_column="branch_nm",
                                  help_text="Branch, e.g. Abu Dhabi")
-
     sts_cd = models.CharField(max_length=3, choices=Status.choices, default=Status.ACTIVE,
                               db_column="sts_cd", help_text="Status, e.g. ACT")
 

@@ -55,7 +55,11 @@ class IborCashEntryForm(forms.ModelForm):
         cleaned_data = super().clean()
         account = cleaned_data.get('account')
         currency = cleaned_data.get('currency')
-        
+        fx_rate = cleaned_data.get('fx_rate')
+
+        if fx_rate:
+            return cleaned_data
+
         if account and currency and account.ccy_id != currency.pk:
             raise forms.ValidationError(
                 f"Account {account.acct_cd} currency ({account.ccy.code if account.ccy else 'N/A'}) "

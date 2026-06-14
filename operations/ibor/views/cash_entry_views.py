@@ -22,12 +22,8 @@ class IborCashCreateView(CreateView):
         If an FX rate is used, the 'amount' represents the value in the 
         account's functional currency (e.g., PKR).
         """
-        instance = form.save(commit=False)
+        if form.cleaned_data.get('fx_rate') and form.cleaned_data.get('account'):
+            form.cleaned_data['currency'] = form.cleaned_data['account'].ccy
 
-        # Logic: If FX rate is present, the entry belongs in the Account's currency
-        if instance.fx_rate and instance.account:
-            instance.currency = instance.account.currency
-
-        instance.save()
         messages.success(self.request, "Cash event saved successfully.")
         return super().form_valid(form)
