@@ -23,7 +23,7 @@ class IborCashCreateView(CreateView):
         account's functional currency (e.g., PKR).
         """
         if form.cleaned_data.get('fx_rate') and form.cleaned_data.get('account'):
-            form.cleaned_data['currency'] = form.cleaned_data['account'].ccy
+            form.instance.currency = form.cleaned_data['account'].ccy
 
         messages.success(self.request, "Cash event saved successfully.")
         return super().form_valid(form)

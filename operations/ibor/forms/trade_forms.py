@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.forms import DateInput
 
 from operations.ibor.models.trade import IborTradeEvent
+from operations.ibor.models.trade import InitiatedBy
 
 
 class BaseTradeForm(forms.ModelForm):
@@ -72,6 +73,8 @@ class IborTradeEntryForm(BaseTradeForm):
         widgets = {
             "trade_dt":  DateInput(attrs={"type": "date", "class": "form-input"}),
             "settle_dt": DateInput(attrs={"type": "date", "class": "form-input"}),
+            "trading_enabled": forms.CheckboxInput(attrs={"onclick": "return false;"}),
+            "pm_discretion_used": forms.CheckboxInput(attrs={"onclick": "return false;"}),
         }
         fields = BaseTradeForm.Meta.fields + [
             # "sleeve",        # reserved — implement later
@@ -82,6 +85,10 @@ class IborTradeEntryForm(BaseTradeForm):
             "asset_sub_class",
             "source_system",
             "trader",
+            "trading_enabled",
+            "discretion_enabled",
+            "pm_discretion_used",
+            "initiated_by",
             "order_type",
             "order_id",
             "execution_id",
@@ -96,21 +103,38 @@ class IborTradeEntryForm(BaseTradeForm):
 
     def clean(self):
         cleaned = super().clean()
-        errors = []
+        errors = {}
 
+        # Compliance checks
+        portfolio = cleaned.get("portfolio")
+        pm_discretion_used = cleaned.get("pm_discretion_used")
+        initiated_by = cleaned.get("initiated_by")
+
+        if portfolio and not portfolio.trading_enabled:
+            raise ValidationError("Trading is disabled for this portfolio.")
+
+        if portfolio and portfolio.mandate:
+            mandate = portfolio.mandate
+            if pm_discretion_used and not mandate.pm_discretion_allowed:
+                self.add_error("pm_discretion_used", "PM discretion is not allowed under this mandate.")
+            if not mandate.pm_discretion_allowed and initiated_by != InitiatedBy.CLIENT:
+                self.add_error("initiated_by", "Non-discretionary mandates require trades to be tagged as client-directed.")
+
+        # Existing validation
+        general_errors = []
         if not cleaned.get("broker"):
-            errors.append("Broker is required.")
+            general_errors.append("Broker is required.")
         if not cleaned.get("source_system"):
-            errors.append("Source system is required.")
+            general_errors.append("Source system is required.")
 
         fx = cleaned.get("fx_override_rate")
         if fx is not None and fx <= Decimal("0"):
-            errors.append("FX override rate must be greater than zero.")
+            general_errors.append("FX override rate must be greater than zero.")
 
         if cleaned.get("manual_override") and not (cleaned.get("override_reason") or "").strip():
-            errors.append("Override reason is required when manual override is selected.")
+            general_errors.append("Override reason is required when manual override is selected.")
 
-        if errors:
-            raise ValidationError(errors)
+        if general_errors:
+            raise ValidationError(general_errors)
 
         return cleaned

@@ -28,6 +28,14 @@ class Broker(models.Model):
     country_id = models.ForeignKey(Country, db_column="country_id",
                                    null=True, blank=True, on_delete=models.SET_NULL, related_name="brokers"
                                    )
+    exchange = models.ForeignKey(
+        "masters.Exchange",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="brokers",
+        help_text="Primary exchange this broker is listed on."
+    )
 
     default_base_currency = models.ForeignKey(
         "masters.Currency",

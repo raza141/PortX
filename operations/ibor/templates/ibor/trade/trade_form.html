@@ -1,5 +1,66 @@
 {% extends "ibor/base_event.html" %}
 
+{% block extra_css %}
+<style>
+    /* Modern Toggle Switch Styling */
+    .discretion-toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        margin-top: 5px;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 22px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 34px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: var(--primary, #007bff);
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(22px);
+    }
+
+    .toggle-label {
+        font-weight: 600;
+        color: var(--text-main, #333);
+        font-size: 0.95rem;
+    }
+</style>
+{% endblock %}
+
 {% block page_title %}PortX · Trade Entry{% endblock %}
 {% block active_tab %}trade{% endblock %}
 {% block ticker_label %}New Trade{% endblock %}
@@ -72,6 +133,29 @@
                 <label for="{{ form.trader.id_for_label }}">Trader / entered by</label>
                 {{ form.trader }}
                 {% for e in form.trader.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <label for="{{ form.initiated_by.id_for_label }}">Initiated By</label>
+                {{ form.initiated_by }}
+                {% for e in form.initiated_by.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <div class="checkbox-container">
+                    <label for="{{ form.trading_enabled.id_for_label }}" class="checkbox-label">
+                        {{ form.trading_enabled }}
+                        <span class="checkbox-text">Trading enabled</span>
+                    </label>
+                </div>
+                {% for e in form.trading_enabled.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="field">
+                <div class="checkbox-container">
+                    <label for="{{ form.pm_discretion_used.id_for_label }}" class="checkbox-label">
+                        {{ form.pm_discretion_used }}
+                        <span class="checkbox-text">Discretion enabled (Allow PM adjustment)</span>
+                    </label>
+                </div>
+                {% for e in form.pm_discretion_used.errors %}<div class="errors">{{ e }}</div>{% endfor %}
             </div>
         </div>
     </div>
@@ -482,6 +566,10 @@
         settleOffset: document.getElementById('id_settle_offset'),
         assetClass: document.getElementById('id_asset_class'),
         portfolio: document.getElementById('id_portfolio'),
+        account: document.getElementById('id_account'),
+        tradingEnabled: document.getElementById('id_trading_enabled'),
+        discretionEnabled: document.getElementById('id_pm_discretion_used'),
+        initiatedBy: document.getElementById('id_initiated_by'),
 
         // Preview elements
         prevSide: document.getElementById('prev-side'),
@@ -651,29 +739,31 @@
     }
 
     // Auto Charges (Fee Engine)
-    async function fetchAvailableCash() {
-        const portfolioId = els.portfolio?.value;
-        const tradeDate = els.tradeDt?.value;
-        
-        if (!portfolioId) {
-            if (els.prevAvailableCash) els.prevAvailableCash.textContent = "—";
-            return;
-        }
+async function fetchAvailableCash() {
+    const portfolioId = els.portfolio?.value;
+    const tradeDate = els.tradeDt?.value;
 
-        try {
-            const params = new URLSearchParams({ portfolio_id: portfolioId });
-            if (tradeDate) params.append('effective_dt', tradeDate);
-
-            const response = await fetch(`/ibor/cash/balance/?${params}`);
-            const data = await response.json();
-
-            if (data.ok && els.prevAvailableCash) {
-                els.prevAvailableCash.textContent = fmt(parseFloat(data.balance)) + ' PKR';
-            }
-        } catch (err) {
-            console.error('Cash balance fetch error:', err);
-        }
+    if (!portfolioId || !tradeDate) {
+        if (els.prevAvailableCash) els.prevAvailableCash.textContent = '—';
+        return;
     }
+
+    try {
+        const params = new URLSearchParams({
+            portfolio_id: portfolioId,
+            effective_dt: tradeDate,
+        });
+
+        const response = await fetch(`/ibor/api/cash/account-state/?${params}`);
+        const data = await response.json();
+
+        if (data.ok && els.prevAvailableCash) {
+            els.prevAvailableCash.textContent = fmt(parseFloat(data.balance)) + ' PKR';
+        }
+    } catch (err) {
+        console.error('Cash balance fetch error', err);
+    }
+}
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -708,7 +798,7 @@
             if (brokerId) params.append('broker_id', brokerId);
             if (execVenueId) params.append('exec_venue_id', execVenueId);
 
-            const response = await fetch(`/ibor/fees/quote/?${params}`);
+            const response = await fetch(`/ibor/api/fees/quote/?${params}`);
             const data = await response.json();
 
             if (data.message === 'OK' && data.charges && data.charges.length > 0) {
@@ -865,36 +955,70 @@
         });
     }
 
+    function updateInitiatedByVisibility() {
+        if (!els.initiatedBy) return;
+        const container = els.initiatedBy.parentElement;
+        if (els.discretionEnabled.checked) {
+            container.style.display = 'none';
+        } else {
+            container.style.display = 'block';
+        }
+    }
+
+    function fetchPortfolioControls() {
+        const portfolioId = els.portfolio.value;
+        if (!portfolioId) {
+            els.tradingEnabled.checked = false;
+            els.discretionEnabled.checked = false;
+            updateInitiatedByVisibility();
+            return;
+        }
+        fetch(`/ibor/api/portfolio/controls/?portfolio_id=${portfolioId}`)
+            .then(res => res.json())
+            .then(data => {
+                els.tradingEnabled.checked = data.trading_enabled;
+                els.discretionEnabled.checked = data.discretion_enabled;
+                updateInitiatedByVisibility();
+            });
+    }
+
+    let feeFetchDebounceTimer;
+
     // Fee Schedule Auto-Population
     function fetchAndPopulateFeeRules() {
-        const brokerId = els.broker?.value;
-        const exchangeId = els.execVenue?.value;
-        const assetClassId = els.assetClass?.value || '';
-        const currencyId = els.tradeCcy?.value || '';
-        const sharePrice = els.price?.value || '';
-        const tradeDate = els.tradeDt?.value || '';
-        const side = els.side?.value || '';
-        
-        if (!brokerId || !exchangeId) return;
-        
-        const params = new URLSearchParams();
-        params.append('broker_id', brokerId);
-        params.append('exec_venue_id', exchangeId);
-        if (assetClassId) params.append('asset_class_id', assetClassId);
-        if (currencyId) params.append('trade_ccy_id', currencyId);
-        if (sharePrice) params.append('share_price', sharePrice);
-        if (tradeDate) params.append('trade_dt', tradeDate);
-        if (side) params.append('side', side);
-        params.append('source_system', 'IBOR');
-        
-        fetch('/ibor/fees/schedule-rules/?' + params.toString())
-            .then(response => response.ok ? response.json() : Promise.reject('Network error'))
-            .then(data => {
-                if (data.success && data.fee_rules && data.fee_rules.length > 0) {
-                    populateFeeRules(data.fee_rules);
-                }
-            })
-            .catch(error => console.error('Fee auto-population error:', error));
+        clearTimeout(feeFetchDebounceTimer);
+        feeFetchDebounceTimer = setTimeout(() => {
+            const brokerId = els.broker?.value;
+            const exchangeId = els.execVenue?.value;
+            const portfolioId = els.portfolio?.value;
+            const tradeDate = els.tradeDt?.value;
+            const assetClassId = els.assetClass?.value || '';
+            const currencyId = els.tradeCcy?.value || '';
+            const sharePrice = els.price?.value || '';
+            const side = els.side?.value || '';
+            
+            if (!brokerId || !exchangeId || !portfolioId || !tradeDate) return;
+            
+            const params = new URLSearchParams();
+            params.append('broker_id', brokerId);
+            params.append('exec_venue_id', exchangeId);
+            params.append('portfolio_id', portfolioId);
+            params.append('trade_dt', tradeDate);
+            if (assetClassId) params.append('asset_class_id', assetClassId);
+            if (currencyId) params.append('trade_ccy_id', currencyId);
+            if (sharePrice) params.append('share_price', sharePrice);
+            if (side) params.append('side', side);
+            params.append('source_system', 'IBOR');
+            
+            fetch('/ibor/api/fees/schedule-rules/?' + params.toString())
+                .then(response => response.ok ? response.json() : Promise.reject('Network error'))
+                .then(data => {
+                    if (data.success && data.fee_rules && data.fee_rules.length > 0) {
+                        populateFeeRules(data.fee_rules);
+                    }
+                })
+                .catch(error => console.error('Fee auto-population error:', error));
+        }, 250);
     }
 
     function populateFeeRules(feeRules) {
@@ -931,6 +1055,25 @@
         if (els.tradeDt) els.tradeDt.addEventListener('change', fetchAvailableCash);
     }
 
+    function fetchAvailableCash() {
+        const accountId = els.account ? els.account.value : null;
+        if (!accountId) return;
+
+        fetch(`/ibor/api/cash/account-state/?account_id=${accountId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI with available cash
+                    if (els.prevAvailableCash) {
+                        els.prevAvailableCash.textContent = data.available_cash || '0.00';
+                    }
+                } else {
+                    console.error('Available cash error:', data.error);
+                }
+            })
+            .catch(err => console.error('Cash API error:', err));
+    }
+    
     // Init
     syncSettleCcy();
     calculateTotals();
@@ -940,6 +1083,66 @@
     bindAutoChargeFetchListeners();
     setupFormsetManagement();
     bindFeeAutoPopListeners();
+    updateInitiatedByVisibility();
+    
+    // Cascading selects
+    if (els.portfolio) {
+        els.portfolio.addEventListener('change', function() {
+            const portfolioId = this.value;
+            fetchPortfolioControls();
+            if (!portfolioId) return;
+            
+            fetch(`/ibor/api/accounts/by-portfolio/?portfolio_id=${portfolioId}`)
+                .then(res => res.json())
+                .then(data => {
+                    els.account.innerHTML = '<option value="">---------</option>';
+                    data.forEach(item => {
+                        els.account.innerHTML += `<option value="${item.account_id}">${item.account__acct_cd}</option>`;
+                    });
+                    if (data.length === 1) {
+                        els.account.value = data[0].account_id;
+                        els.account.dispatchEvent(new Event('change'));
+                    }
+                });
+        });
+    }
+
+    if (els.account) {
+        els.account.addEventListener('change', function() {
+            const accountId = this.value;
+            if (!accountId) return;
+            
+            fetch(`/ibor/api/broker/by-account/?account_id=${accountId}`)
+                .then(res => res.json())
+                .then(data => {
+                    for(let i=0; i<els.broker.options.length; i++) {
+                        if(els.broker.options[i].value == data.broker_id) {
+                            els.broker.selectedIndex = i;
+                            break;
+                        }
+                    }
+                    els.broker.dispatchEvent(new Event('change'));
+                });
+        });
+    }
+
+    if (els.broker) {
+        els.broker.addEventListener('change', function() {
+            const brokerId = this.value;
+            if (!brokerId) return;
+            
+            fetch(`/ibor/api/exchange/by-broker/?broker_id=${brokerId}`)
+                .then(res => res.json())
+                .then(data => {
+                    for(let i=0; i<els.execVenue.options.length; i++) {
+                        if(els.execVenue.options[i].value == data.exchange_id) {
+                            els.execVenue.selectedIndex = i;
+                            break;
+                        }
+                    }
+                });
+        });
+    }
     
     // Initial fetch of auto charges if fields are already filled
     fetchAutoCharges();

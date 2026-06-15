@@ -1,6 +1,10 @@
+# operations.portfolio.models.portfolio
+
+
 from django.db import models
 from django.utils import timezone
 from django.db.models import Q, F
+from operations.portfolio.models.account import Account
 
 
 class Portfolio(models.Model):
@@ -72,7 +76,7 @@ class Portfolio(models.Model):
         on_delete=models.PROTECT,
         related_name="portfolios",
         db_column="fee_sched_id",
-        help_text="Fee schedule override, e.g. 1% mgmt",
+        help_text="PF mgmt Fee schedule override, e.g. 1% mgmt",
     )
 
     perf_mthd_cd = models.CharField(max_length=4, choices=PerfMethod.choices, default=PerfMethod.TWRR,
@@ -113,3 +117,12 @@ class Portfolio(models.Model):
 
     def __str__(self):
         return f"{self.port_nm} ({self.port_cd})"
+
+    @property
+    def accounts(self):
+        """
+        Returns the accounts mapped to this portfolio.
+        """
+        from operations.portfolio.models.portfolio_account import PortfolioAccountMap
+        account_ids = PortfolioAccountMap.objects.filter(portfolio=self).values_list('account_id', flat=True)
+        return Account.objects.filter(pk__in=account_ids)

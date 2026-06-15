@@ -121,6 +121,11 @@ class Mandate(models.Model):
     doc_id = models.BigIntegerField(null=True, blank=True, db_column="doc_id",
                                     help_text="Signed mandate doc id, e.g. 555001")
 
+    pm_discretion_allowed = models.BooleanField(
+        default=True,
+        help_text="If False, PM cannot trade on their own discretion; only client-directed trades allowed."
+    )
+
     created_by = models.IntegerField(default=101, db_column="created_by", help_text="User id, e.g. 101")
     created_at = models.DateTimeField(auto_now_add=True, db_column="created_at", help_text="Created timestamp")
     updated_at = models.DateTimeField(auto_now=True, db_column="updated_at", help_text="Updated timestamp")

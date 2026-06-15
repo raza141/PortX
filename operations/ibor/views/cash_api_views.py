@@ -1,53 +1,32 @@
 from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from operations.ibor.services.cash_booking import CashBookingService
-from datetime import datetime
+from django.db.models import Sum
+from operations.ibor.models.cash_ledger import IborCashEvent
+from operations.portfolio.models.account import Account
 
-@require_GET
-def get_cash_balance_api(request):
-    portfolio_id = request.GET.get("portfolio_id")
-    effective_dt_raw = request.GET.get("effective_dt")
+def get_account_state_api(request):
+    """
+    Consolidated API to return both the current balance and the currency
+    metadata for a specific account to reduce redundant AJAX calls.
+    """
+    account_id = request.GET.get('account_id')
     
-    if not portfolio_id:
-        return JsonResponse({"ok": False, "message": "portfolio_id is required."}, status=400)
-    
-    effective_dt = datetime.now().date()
-    if effective_dt_raw:
-        try:
-            effective_dt = datetime.strptime(effective_dt_raw, "%Y-%m-%d").date()
-        except ValueError:
-             return JsonResponse({"ok": False, "message": "Invalid date format."}, status=400)
+    if not account_id:
+        return JsonResponse({'success': False, 'error': 'account_id is required'}, status=400)
 
+    # 1. Fetch the aggregated balance from the cash ledger
+    balance = IborCashEvent.objects.filter(
+        account_id=account_id
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    # 2. Fetch account metadata (Currency)
     try:
-        balance = CashBookingService.get_cash_balance(int(portfolio_id), effective_dt)
-        return JsonResponse({"ok": True, "balance": str(balance)})
-    except Exception as e:
-        return JsonResponse({"ok": False, "message": str(e)}, status=500)
+        account = Account.objects.select_related('currency').get(pk=account_id)
+        currency_code = getattr(account.currency, 'code', str(account.currency))
+    except Account.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Account not found'}, status=404)
 
-
-@require_GET
-def get_fx_rate_api(request):
-    portfolio_id = request.GET.get("portfolio_id")
-    currency_id = request.GET.get("currency_id")
-    effective_dt_raw = request.GET.get("effective_dt")
-    
-    if not portfolio_id or not currency_id:
-        return JsonResponse({"ok": False, "message": "portfolio_id and currency_id are required."}, status=400)
-    
-    effective_dt = datetime.now().date()
-    if effective_dt_raw:
-        try:
-            effective_dt = datetime.strptime(effective_dt_raw, "%Y-%m-%d").date()
-        except ValueError:
-             return JsonResponse({"ok": False, "message": "Invalid date format."}, status=400)
-
-    try:
-        rate, pair = CashBookingService.get_fx_rate(int(portfolio_id), int(currency_id), effective_dt)
-        return JsonResponse({
-            "ok": True, 
-            "rate": str(rate) if rate else "", 
-            "pair_id": pair.currency_pair_id if pair else "",
-            "pair_code": str(pair) if pair else ""
-        })
-    except Exception as e:
-        return JsonResponse({"ok": False, "message": str(e)}, status=500)
+    return JsonResponse({
+        'success': True,
+        'balance': float(balance),
+        'currency_code': currency_code
+    })

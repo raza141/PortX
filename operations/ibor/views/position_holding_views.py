@@ -2,6 +2,7 @@
 #operations/ibor/views/position_holding_views.py
 
 # operations/ibor/views/position_holding_views.py
+from decimal import Decimal
 from django.views.generic import TemplateView
 from operations.ibor.models.cash_ledger import IborCashEvent
 from operations.ibor.models.lot import IborTaxLot
@@ -17,18 +18,30 @@ class PositionHoldingView(TemplateView):
         # 1. Fetch active inventory lots. 
         # Path corrected from 'portfolio__client' to 'portfolio__mandate__investor'
         active_lots = IborTaxLot.objects.filter(remaining_qty__gt=0).select_related(
-            'instrument__security', 
-            'portfolio__mandate__investor', 
+            'instrument__security',
+            'portfolio__mandate__investor',
             'cost_ccy'
         ).order_by('instrument__ticker', 'portfolio__port_nm', 'acquired_dt')
 
         # 2. Group Hierarchy: Investor -> Mandate -> Instrument -> Lots
-        investor_tree = {inv.pk: {'investor': inv, 'mandates': {}} for inv in Investor.objects.all()}
+        investor_tree = {}
+        active_portfolio_ids = set()
+
         for lot in active_lots:
             investor = lot.portfolio.mandate.investor
+            if not investor:
+                continue
+
             mandate = lot.portfolio.mandate
             instrument = lot.instrument
+            active_portfolio_ids.add(lot.portfolio_id)
             
+            if investor.pk not in investor_tree:
+                investor_tree[investor.pk] = {
+                    'investor': investor,
+                    'mandates': {}
+                }
+
             investor_node = investor_tree[investor.pk]
             if mandate.pk not in investor_node['mandates']:
                 investor_node['mandates'][mandate.pk] = {
@@ -55,10 +68,16 @@ class PositionHoldingView(TemplateView):
         for investor in investor_tree.values():
             for mandate in investor['mandates'].values():
                 for inst in mandate['holdings'].values():
-                    inst['avg_cost'] = inst['total_cost'] / inst['total_qty'] if inst['total_qty'] else 0
+                    # Quantize/Round to match the 4 decimal places in the model
+                    if inst['total_qty'] > 0:
+                        inst['avg_cost'] = (inst['total_cost'] / inst['total_qty']).quantize(Decimal("0.0001"))
+                    else:
+                        inst['avg_cost'] = 0
 
         context['investors'] = investor_tree.values()
         context['total_aum'] = sum(lot.remaining_qty * lot.unit_cost for lot in active_lots)
-        context['total_cash'] = IborCashEvent.objects.aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        # Filter cash to only include portfolios currently being viewed in the holdings list
+        context['total_cash'] = IborCashEvent.objects.filter(portfolio_id__in=active_portfolio_ids).aggregate(Sum('amount'))['amount__sum'] or 0
         context['active_tab'] = 'positions'
         return context

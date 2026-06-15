@@ -1,3 +1,6 @@
+#file path
+# operations.portfolio.models.account
+
 from django.db import models
 from django.utils import timezone
 from django.db.models import Q, F

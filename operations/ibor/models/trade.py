@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from django.db import models
+from django.core.exceptions import ValidationError
 
 from .common import IborTimeStampedModel, IborState
 
@@ -13,6 +14,11 @@ class IborSide(models.TextChoices):
     BUY = "BUY", "Buy"
     SELL = "SELL", "Sell"
     SHORT_SELL = "SHORT_SELL", "Short Sell"
+
+class InitiatedBy(models.TextChoices):
+    PM = "PM", "Portfolio manager"
+    CLIENT = "CLIENT", "Client instruction"
+    OPS = "OPS", "Operations / booking"
 
 class IborOrderType(models.TextChoices):
     MARKET = "MARKET", "Market Order"
@@ -205,6 +211,25 @@ class IborTradeEvent(IborTimeStampedModel):
         related_name="ibor_trades",
         help_text="RM / trader who placed this order.",
     )
+    initiated_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        help_text="User who initiated this trade event."
+    )
+    pm_discretion_used = models.BooleanField(
+        default=False,
+        help_text="Ticked when the PM is exercising discretion on this specific trade."
+    )
+    trading_enabled = models.BooleanField(
+        default=True,
+        help_text="True if trading is enabled for this trade.",
+    )
+    discretion_enabled = models.BooleanField(
+        default=False,
+        help_text="True if discretion is allowed for this trade.",
+    )
 
     imported_flag = models.BooleanField(
         default=False,
@@ -316,6 +341,23 @@ class IborTradeEvent(IborTimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.portfolio_id}:{self.instrument_id}:{self.side} {self.quantity} @ {self.price} ({self.trade_dt})"
+
+    def clean(self):
+        # Reuse form logic if needed, but model-level validation here
+        if self.portfolio and not self.portfolio.trading_enabled:
+            raise ValidationError("Trading is disabled for this portfolio.")
+        
+        if self.portfolio and self.portfolio.mandate:
+            mandate = self.portfolio.mandate
+            if self.pm_discretion_used and not mandate.pm_discretion_allowed:
+                raise ValidationError("PM discretion is not allowed under this mandate.")
+            if not mandate.pm_discretion_allowed and self.initiated_by != InitiatedBy.CLIENT:
+                raise ValidationError("Non-discretionary mandates require trades to be tagged as client-directed.")
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class IborChargeComponent(IborTimeStampedModel):
