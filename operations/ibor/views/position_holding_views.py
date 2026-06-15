@@ -55,7 +55,8 @@ class PositionHoldingView(TemplateView):
                     'instrument': instrument,
                     'total_qty': 0,
                     'total_cost': 0,
-                    'lots': []
+                    'lots': [],
+                    'ccy_code': getattr(lot.cost_ccy, 'code', '') if lot.cost_ccy else ''
                 }
             
             inst_data = mandate_node['holdings'][instrument.pk]

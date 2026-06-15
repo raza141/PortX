@@ -41,9 +41,9 @@
                         {{ holding.instrument.ticker }} 
                         <span style="font-weight: 400; color: var(--text-muted); margin-left: 8px;">{{ holding.instrument.security.name }}</span>
                     </td>
-                    <td style="padding: 12px 8px; text-align: right; font-weight: 600;">{{ holding.total_qty|floatformat:0 }}</td>
-                    <td style="padding: 12px 8px; text-align: right;">${{ holding.avg_cost|floatformat:2 }}</td>
-                    <td style="padding: 12px 8px; text-align: right; font-weight: 600;">${{ holding.total_cost|floatformat:2 }}</td>
+                    <td style="padding: 12px 8px; text-align: right; font-weight: 600;">{{ holding.total_qty|floatformat:"0g" }}</td>
+                    <td style="padding: 12px 8px; text-align: right;">{{ holding.avg_cost|floatformat:"2g" }} {{ holding.ccy_code }}</td>
+                    <td style="padding: 12px 8px; text-align: right; font-weight: 600;">{{ holding.total_cost|floatformat:"2g" }} {{ holding.ccy_code }}</td>
                     <td style="padding: 12px 8px; text-align: center;">
                         <button type="button" class="btn btn-sm btn-secondary" style="min-height: 30px;" onclick="toggleLots('lots-{{ mandate_id }}-{{ instrument_id }}')">
                             Lots
@@ -68,9 +68,9 @@
                                 {% for lot in holding.lots %}
                                 <tr>
                                     <td style="padding: 4px;">{{ lot.acquired_dt|date:"d M Y" }}</td>
-                                    <td style="padding: 4px; text-align: right;">{{ lot.remaining_qty|floatformat:0 }}</td>
-                                    <td style="padding: 4px; text-align: right;">${{ lot.unit_cost|floatformat:2 }}</td>
-                                    <td style="padding: 4px; text-align: right;">${{ lot.total_cost|floatformat:2 }}</td>
+                                    <td style="padding: 4px; text-align: right;">{{ lot.remaining_qty|floatformat:"0g" }}</td>
+                                    <td style="padding: 4px; text-align: right;">{{ lot.unit_cost|floatformat:"2g" }} {{ lot.cost_ccy.code }}</td>
+                                    <td style="padding: 4px; text-align: right;">{{ lot.total_cost|floatformat:"2g" }} {{ lot.cost_ccy.code }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -97,15 +97,15 @@
     <div class="summary-list">
         <div class="summary-item">
             <span class="summary-label">Total AUM</span>
-            <span class="summary-value" id="total-aum">${{ total_aum|floatformat:2 }}</span>
+            <span class="summary-value" id="total-aum">{{ total_aum|floatformat:"2g" }}</span>
         </div>
         <div class="summary-item">
             <span class="summary-label">Cash Balance</span>
-            <span class="summary-value" id="cash-balance">${{ total_cash|floatformat:2 }}</span>
+            <span class="summary-value" id="cash-balance">{{ total_cash|floatformat:"2g" }}</span>
         </div>
         <div class="summary-item">
             <span class="summary-label">Market Value</span>
-            <span class="summary-value" id="market-value">${{ total_aum|floatformat:2 }}</span>
+            <span class="summary-value" id="market-value">{{ total_aum|floatformat:"2g" }}</span>
         </div>
     </div>
 </div>
@@ -115,11 +115,11 @@
     <div class="summary-list">
         <div class="summary-item">
             <span class="summary-label">Day P&L</span>
-            <span class="summary-value" style="color: green;">+$4,500.00</span>
+            <span class="summary-value" style="color: green;">+4,500.00</span>
         </div>
         <div class="summary-item">
             <span class="summary-label">Unrealized P&L</span>
-            <span class="summary-value" style="color: green;">+$85,000.00</span>
+            <span class="summary-value" style="color: green;">+85,000.00</span>
         </div>
     </div>
 </div>

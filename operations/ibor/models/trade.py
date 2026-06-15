@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from django.db import models
 from django.core.exceptions import ValidationError
 
@@ -344,7 +345,7 @@ class IborTradeEvent(IborTimeStampedModel):
 
     def clean(self):
         # Reuse form logic if needed, but model-level validation here
-        if self.portfolio and not self.portfolio.trading_enabled:
+        if self.portfolio and not self.portfolio.trd_enbl_flg:
             raise ValidationError("Trading is disabled for this portfolio.")
         
         if self.portfolio and self.portfolio.mandate:
@@ -356,6 +357,27 @@ class IborTradeEvent(IborTimeStampedModel):
         super().clean()
 
     def save(self, *args, **kwargs):
+        # Securely calculate core economics on the backend before database validation
+        if self.quantity is not None and self.price is not None:
+            # Define the exact precision matching our model's decimal_places=10
+            precision = Decimal("0.0000000001")
+            
+            # 1. Gross Amount = Qty * Price
+            self.gross_amount = (self.quantity * self.price).quantize(precision)
+            
+            # 2. Safety check for charges
+            if self.total_charges is None:
+                self.total_charges = Decimal("0").quantize(precision)
+                
+            # 3. Net Amount = Gross +/- Charges based on side
+            if self.side == IborSide.BUY:
+                self.net_amount = (self.gross_amount + self.total_charges).quantize(precision)
+            else:
+                self.net_amount = (self.gross_amount - self.total_charges).quantize(precision)
+                
+            # 4. Cash movement is equivalent to the Net Amount
+            self.settlement_cash_amount = self.net_amount
+
         self.full_clean()
         return super().save(*args, **kwargs)
 

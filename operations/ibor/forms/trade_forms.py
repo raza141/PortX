@@ -110,7 +110,7 @@ class IborTradeEntryForm(BaseTradeForm):
         pm_discretion_used = cleaned.get("pm_discretion_used")
         initiated_by = cleaned.get("initiated_by")
 
-        if portfolio and not portfolio.trading_enabled:
+        if portfolio and not portfolio.trd_enbl_flg:
             raise ValidationError("Trading is disabled for this portfolio.")
 
         if portfolio and portfolio.mandate:

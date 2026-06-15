@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 
-from operations.ibor.models.trade import IborSide, IborTradeEvent
+from operations.ibor.models.trade import IborSide, IborTradeEvent, IborBookStatus
 
 
 @dataclass(frozen=True)
@@ -21,7 +21,7 @@ def validate_trade_for_booking(trade: IborTradeEvent) -> TradeValidationResult:
     if trade is None:
         raise ValidationError("Trade is required for booking.")
 
-    if trade.book_sts_cd == IborTradeEvent.IborBookStatus.REVERSED:
+    if trade.book_sts_cd == IborBookStatus.REVERSED:
         errors.setdefault("book_sts_cd", []).append("Reversed trade cannot be booked again.")
 
     if trade.side not in {IborSide.BUY, IborSide.SELL}:
