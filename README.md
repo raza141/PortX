@@ -141,3 +141,4 @@ ___
 - Trades and cash events are fact tables 
 - Lots and cash ledger are derived posting tables (booked results)
 - Mapping tables resolve “what account belongs to what book”
+- ***Use one schedule per broker + market + asset class + currency + side conte***

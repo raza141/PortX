@@ -1,6 +1,7 @@
+# operations/ibor/services/fee_engine.py (path)
+
 from __future__ import annotations
 
-from dataclasses import asdict
 from decimal import Decimal
 from typing import Any
 
@@ -33,6 +34,7 @@ class IborFeeEngine:
             trade_ccy_id=trade_ccy_id,
             side=side,
             source_system=source_system,
+            share_price=price,
         )
 
         if schedule is None:

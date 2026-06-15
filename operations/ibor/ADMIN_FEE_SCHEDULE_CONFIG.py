@@ -24,15 +24,27 @@ class IborFeeRuleInline(admin.TabularInline):
     """
     model = IborFeeRule
     extra = 1
-    fields = [
-        'charge_type_cd',
-        'sequence_no',
-        'calc_method',
-        'rate',
-        'minimum_amount',
-        'maximum_amount',
-        'reference_charge_type_cd',
-    ]
+    fields = (
+        "charge_type_cd",
+        "sequence_no",
+        "description",
+        "calc_method",
+        "apply_on",
+        "rate",
+        "flat_amount",
+        "per_unit_amount",
+        "alternate_amount_basis",
+        "minimum_amount",
+        "maximum_amount",
+        "min_price",
+        "max_price",
+        "currency",
+        "reference_charge_type_cd",
+        "rounding_dp",
+        "is_mandatory",
+        "is_active",
+    )
+
     ordering = ['sequence_no']
     
     # Make it easier to read

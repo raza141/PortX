@@ -48,3 +48,24 @@ class IborFeeRuleAdmin(admin.ModelAdmin):
         "schedule__schedule_name",
     )
     ordering = ("schedule", "sequence_no", "id")
+    fields = (
+        "schedule",
+        "sequence_no",
+        "charge_type_cd",
+        "description",
+        "calc_method",
+        "apply_on",
+        "rate",
+        "flat_amount",
+        "per_unit_amount",
+        "alternate_amount_basis",
+        "minimum_amount",
+        "maximum_amount",
+        "min_price",
+        "max_price",
+        "currency",
+        "reference_charge_type_cd",
+        "rounding_dp",
+        "is_mandatory",
+        "is_active",
+    )
