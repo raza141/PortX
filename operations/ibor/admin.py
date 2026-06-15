@@ -20,7 +20,6 @@ admin.site.register(IborPriceSnapshot)
 admin.site.register(IborFxOverride)
 
 
-
 @admin.register(IborFeeRule)
 class IborFeeRuleAdmin(admin.ModelAdmin):
     list_display = (

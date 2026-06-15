@@ -1,4 +1,5 @@
 # core/operations/ibor/models/market.py
+# This file consist of two model [IborPriceSnapshot, IborFxOverride]
 from __future__ import annotations
 
 from django.db import models

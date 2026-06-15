@@ -16,7 +16,7 @@ class IborFeeCalcMethod(models.TextChoices):
     FLAT = "FLAT", "Flat amount"
     PER_UNIT = "PER_UNIT", "Per unit"
     PCT_OF_CHARGE = "PCT_OF_CHARGE", "Percent of another charge"
-    PCT_CUMULATIVE = 'PCT_CUMUL', 'Percent of cumulative charges'
+    PCT_CUMULATIVE = "PCT_CUMUL", "Percent of cumulative charges"
     MIN_OF_PCT_OR_FLAT = "MIN_OF_PCT_OR_FLAT", "Minimum of percent or flat"
     MAX_OF_PCT_OR_FLAT = "MAX_OF_PCT_OR_FLAT", "Maximum of percent or flat"
     PSX_TIERED_COMMISSION = "PSX_TIERED_COMMISSION", "PSX Tiered Commission"
@@ -32,7 +32,7 @@ class IborFeeApplyOn(models.TextChoices):
 class IborFeeSchedule(IborTimeStampedModel):
     schedule_name = models.CharField(
         max_length=120,
-        help_text="Human-friendly fee schedule name.",
+        help_text="Broker fee schedule name. (SCS One Account For All)",
     )
 
     broker = models.ForeignKey(
@@ -50,7 +50,7 @@ class IborFeeSchedule(IborTimeStampedModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="ibor_fee_schedules",
-        help_text="Optional asset class filter.",
+        help_text="The Schedule for which asset class (Equity, FI, etc.).",
     )
 
     asset_sub_class = models.ForeignKey(
@@ -241,11 +241,11 @@ class IborFeeRule(IborTimeStampedModel):
     )
 
     reference_charge_type_cd = models.CharField(
-        max_length=10,
+        max_length=100,
         choices=IborChargeType.choices,
         blank=True,
         default="",
-        help_text="Used when fee depends on another charge, e.g. tax on commission.",
+        help_text="Referenced charge code(s), e.g. COMM or COMM,CDC for cumulative tax.",
     )
 
     rounding_dp = models.PositiveSmallIntegerField(
