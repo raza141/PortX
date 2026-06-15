@@ -1,4 +1,5 @@
 # operations/ibor/models/fee
+# This file consist of two model [IborFeeSchedule, IborFeeRule]
 
 
 
@@ -43,22 +44,6 @@ class IborFeeSchedule(IborTimeStampedModel):
         help_text="Optional broker-specific fee schedule.",
     )
 
-    exec_venue = models.ForeignKey(
-        "masters.Exchange",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="ibor_fee_schedules",
-        help_text="Optional exchange/venue-specific fee schedule.",
-    )
-
-    source_system = models.CharField(
-        max_length=40,
-        blank=True,
-        default="",
-        help_text="Optional source system identifier.",
-    )
-
     asset_class = models.ForeignKey(
         "instruments.AssetClass",
         null=True,
@@ -75,6 +60,22 @@ class IborFeeSchedule(IborTimeStampedModel):
         on_delete=models.SET_NULL,
         related_name="ibor_fee_schedules",
         help_text="Optional asset sub-class filter.",
+    )
+
+    exec_venue = models.ForeignKey(
+        "masters.Exchange",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ibor_fee_schedules",
+        help_text="Optional exchange/venue-specific fee schedule.",
+    )
+
+    source_system = models.CharField(
+        max_length=40,
+        blank=True,
+        default="",
+        help_text="Optional source system identifier.",
     )
 
     trade_ccy = models.ForeignKey(
@@ -150,7 +151,7 @@ class IborFeeRule(IborTimeStampedModel):
     charge_type_cd = models.CharField(
         max_length=10,
         choices=IborChargeType.choices,
-        default=IborChargeType.OTHER,
+        default=IborChargeType.COMM,
         help_text="Normalized charge type.",
     )
 
@@ -158,13 +159,13 @@ class IborFeeRule(IborTimeStampedModel):
         max_length=120,
         blank=True,
         default="",
-        help_text="Display label for the fee line.",
+        help_text="Charges description for trading.",
     )
 
     calc_method = models.CharField(
         max_length=30,
         choices=IborFeeCalcMethod.choices,
-        help_text="How this fee is calculated.",
+        help_text="How this fee is calculated (Gross, Per Unit etc.).",
     )
 
     apply_on = models.CharField(
@@ -236,7 +237,7 @@ class IborFeeRule(IborTimeStampedModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="ibor_fee_rules",
-        help_text="Currency of calculated charge.",
+        help_text="Commission Currency of calculated charge.",
     )
 
     reference_charge_type_cd = models.CharField(

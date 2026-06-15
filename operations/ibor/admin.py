@@ -4,7 +4,6 @@ from django.contrib import admin
 
 from operations.ibor.models.trade import IborTradeEvent
 from operations.ibor.models.cash_ledger import IborCashEvent
-from operations.ibor.models.position_lot import PositionLot
 from operations.ibor.models.market import IborPriceSnapshot, IborFxOverride
 from operations.ibor.models.lot import IborTaxLot, IborLotConsumption
 from operations.ibor.models.fee import IborFeeRule, IborFeeSchedule
@@ -14,12 +13,11 @@ from .ADMIN_FEE_SCHEDULE_CONFIG import (
 )
 
 
-admin.site.register(IborCashEvent)
-admin.site.register(PositionLot)
-admin.site.register(IborFxOverride)
-admin.site.register(IborPriceSnapshot)
 admin.site.register(IborTaxLot)
 admin.site.register(IborLotConsumption)
+admin.site.register(IborCashEvent)
+admin.site.register(IborPriceSnapshot)
+admin.site.register(IborFxOverride)
 
 
 

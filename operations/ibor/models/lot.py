@@ -1,4 +1,6 @@
 # core/operations/ibor/models/lot.py
+# This file consist of two model [IborTaxLot, IborLotConsumption]
+
 from __future__ import annotations
 
 from django.db import models
@@ -78,7 +80,6 @@ class IborTaxLot(IborTimeStampedModel):
             models.CheckConstraint(check=models.Q(remaining_qty__gte=0), name="ck_lot_rem_qty_gte_0"),
             models.CheckConstraint(check=models.Q(remaining_qty__lte=models.F("open_qty")), name="ck_lot_rem_le_open"),
         ]
-
 
 
 class IborLotConsumption(IborTimeStampedModel):
