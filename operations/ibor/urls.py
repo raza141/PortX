@@ -9,6 +9,8 @@ from operations.ibor.views.ajax_views import (
     GetPortfolioControlsView,
     CalculateSettlementDateView,
     GetBrokerCurrencyView,
+    GetAccountCurrencyView,
+    GetCurrencyPairView,
 )
 from operations.ibor.views.cash_entry_views import IborCashCreateView
 from operations.ibor.views.cash_api_views import get_account_state_api
@@ -48,6 +50,8 @@ urlpatterns = [
     # API - Cash Management
     # Consolidate balance and currency into one 'Account State' call
     path("api/cash/account-state/", get_account_state_api, name="account-state"),
+    path("api/cash/account-currency/", GetAccountCurrencyView.as_view(), name="get-account-currency"),
+    path("api/cash/currency-pair/", GetCurrencyPairView.as_view(), name="get-currency-pair"),
 
     # API - Portfolio, Accounts & Brokers
     path("api/portfolio/controls/", GetPortfolioControlsView.as_view(), name="get-portfolio-controls"),

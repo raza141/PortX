@@ -157,7 +157,7 @@
                 effective_date: effectiveDt
             });
 
-            const response = await fetch(`/ibor/cash/get-fx-rate/?${params}`);
+            const response = await fetch(`/ibor/api/market/fx-rate/?${params}`);
             const data = await response.json();
 
             if (response.ok && data.fx_rate) {
@@ -184,7 +184,7 @@
                 quote_currency_id: accountCurrencyId
             });
 
-            const response = await fetch(`/ibor/cash/get-currency-pair/?${params}`);
+            const response = await fetch(`/ibor/api/cash/currency-pair/?${params}`);
             const data = await response.json();
 
             if (response.ok && data.pair_id) {
@@ -204,7 +204,7 @@
         if (!accountId) return;
 
         try {
-            const response = await fetch(`/ibor/cash/get-account-currency/?account_id=${accountId}`);
+            const response = await fetch(`/ibor/api/cash/account-currency/?account_id=${accountId}`);
             const data = await response.json();
 
             if (response.ok && data.currency_id) {
