@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 
 from operations.ibor.models.fee import (
-    IborFeeAltBasis,
     IborFeeApplyOn,
     IborFeeCalcMethod,
     IborFeeRule,
@@ -122,32 +121,22 @@ class IborFeeCalculator:
             amount = quantity * (rule.per_unit_amount or ZERO)
 
         elif rule.calc_method == IborFeeCalcMethod.PCT_OF_CHARGE:
-            base_value = cls._get_single_reference_base(rule=rule, calculated_lines=calculated_lines)
+            base_value = cls._get_single_reference_base(rule, calculated_lines)
             amount = base_value * (rule.rate or ZERO)
 
         elif rule.calc_method == IborFeeCalcMethod.PCT_CUMULATIVE:
-            base_value = cls._get_cumulative_reference_base(rule=rule, calculated_lines=calculated_lines)
+            base_value = cls._get_cumulative_reference_base(rule, calculated_lines)
             amount = base_value * (rule.rate or ZERO)
 
         elif rule.calc_method == IborFeeCalcMethod.MIN_OF_PCT_OR_ALT:
-            pct_amount = cls._get_percent_amount(
-                rule=rule,
-                gross_amount=gross_amount,
-                quantity=quantity,
-                calculated_lines=calculated_lines,
-            )
-            alt_amount = cls._get_alternate_amount(rule=rule, quantity=quantity)
-            amount = min(pct_amount, alt_amount)
+            pct_amount = cls._get_base_value(rule, gross_amount, quantity, calculated_lines) * (rule.rate or ZERO)
+            flat_amount = rule.flat_amount or ZERO
+            amount = min(pct_amount, flat_amount)
 
         elif rule.calc_method == IborFeeCalcMethod.MAX_OF_PCT_OR_ALT:
-            pct_amount = cls._get_percent_amount(
-                rule=rule,
-                gross_amount=gross_amount,
-                quantity=quantity,
-                calculated_lines=calculated_lines,
-            )
-            alt_amount = cls._get_alternate_amount(rule=rule, quantity=quantity)
-            amount = max(pct_amount, alt_amount)
+            pct_amount = cls._get_base_value(rule, gross_amount, quantity, calculated_lines) * (rule.rate or ZERO)
+            flat_amount = rule.flat_amount or ZERO
+            amount = max(pct_amount, flat_amount)
 
         if rule.minimum_amount is not None:
             amount = max(amount, rule.minimum_amount)
@@ -159,44 +148,8 @@ class IborFeeCalculator:
         return amount.quantize(quant, rounding=ROUND_HALF_UP)
 
     @classmethod
-    def _get_percent_amount(
-        cls,
-        *,
-        rule: IborFeeRule,
-        gross_amount: Decimal,
-        quantity: Decimal,
-        calculated_lines: list[CalculatedFeeLine],
-    ) -> Decimal:
-        base_value = cls._get_base_value(
-            rule=rule,
-            gross_amount=gross_amount,
-            quantity=quantity,
-            calculated_lines=calculated_lines,
-        )
-        return base_value * (rule.rate or ZERO)
-
-    @classmethod
-    def _get_alternate_amount(
-        cls,
-        *,
-        rule: IborFeeRule,
-        quantity: Decimal,
-    ) -> Decimal:
-        if rule.alternate_amount_basis == IborFeeAltBasis.PER_UNIT:
-            return quantity * (rule.per_unit_amount or ZERO)
-
-        if rule.alternate_amount_basis == IborFeeAltBasis.FLAT:
-            return rule.flat_amount or ZERO
-
-        if rule.per_unit_amount is not None:
-            return quantity * rule.per_unit_amount
-
-        return rule.flat_amount or ZERO
-
-    @classmethod
     def _get_base_value(
         cls,
-        *,
         rule: IborFeeRule,
         gross_amount: Decimal,
         quantity: Decimal,
@@ -215,14 +168,13 @@ class IborFeeCalculator:
             return ZERO
 
         if rule.reference_charge_type_cd:
-            return cls._get_single_reference_base(rule=rule, calculated_lines=calculated_lines)
+            return cls._get_single_reference_base(rule, calculated_lines)
 
         return gross_amount
 
     @classmethod
     def _get_single_reference_base(
         cls,
-        *,
         rule: IborFeeRule,
         calculated_lines: list[CalculatedFeeLine],
     ) -> Decimal:
@@ -238,18 +190,17 @@ class IborFeeCalculator:
     @classmethod
     def _get_cumulative_reference_base(
         cls,
-        *,
         rule: IborFeeRule,
         calculated_lines: list[CalculatedFeeLine],
     ) -> Decimal:
         ref_codes = [
             code.strip()
-            for code in (rule.reference_charge_type_cd or "").split(",")
+            for code in (rule.reference_charge_type_cd or "").replace("+", ",").split(",")
             if code.strip()
         ]
 
         if not ref_codes:
-            return sum((line.amount for line in calculated_lines), start=ZERO)
+            return ZERO
 
         total = ZERO
         for line in calculated_lines:

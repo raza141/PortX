@@ -779,6 +779,10 @@ async function fetchAvailableCash() {
         const side = els.side?.value;
         const brokerId = els.broker?.value;
         const execVenueId = els.execVenue?.value;
+        const assetClassId = els.assetClass?.value;
+        const tradeCcyId = els.tradeCcy?.value;
+        const instrumentId = document.getElementById('id_instrument')?.value || '';
+        const securityId = document.getElementById('id_security')?.value || '';
 
         if (!tradeDt || !quantity || !price || !side) {
             if (els.autoChargesRows) els.autoChargesRows.innerHTML = '';
@@ -795,13 +799,45 @@ async function fetchAvailableCash() {
                 price: price,
                 side: side,
             });
+
             if (brokerId) params.append('broker_id', brokerId);
             if (execVenueId) params.append('exec_venue_id', execVenueId);
+            if (instrumentId) params.append('instrument_id', instrumentId);
+            if (securityId) params.append('security_id', securityId);
+            if (assetClassId) params.append('asset_class_id', assetClassId);
+            if (tradeCcyId) params.append('trade_ccy_id', tradeCcyId);
 
-            const response = await fetch(`/ibor/api/fees/quote/?${params}`);
+            params.append('source_system', 'IBOR');
+
+            // DEBUG LOGS - ADD HERE
+            console.log('=== FEE DEBUG START ===');
+            console.log('assetClass element:', els.assetClass);
+            console.log('assetClass value:', els.assetClass?.value);
+            console.log('instrumentId:', instrumentId);
+            console.log('securityId:', securityId);
+            console.log('tradeCcyId:', tradeCcyId);
+            console.log('fee params object:', {
+                tradeDt,
+                quantity,
+                price,
+                side,
+                brokerId,
+                execVenueId,
+                assetClassId,
+                tradeCcyId,
+                instrumentId,
+                securityId,
+            });
+            console.log('fee query string:', params.toString());
+            console.log('fee url:', `/ibor/api/fees/quote/?${params.toString()}`);
+            console.log('=== FEE DEBUG END ===');
+
+            const response = await fetch(`/ibor/api/fees/quote/?${params.toString()}`);
             const data = await response.json();
 
-            if (data.message === 'OK' && data.charges && data.charges.length > 0) {
+            console.log('fee response:', data);
+
+            if (data.ok && data.charges && data.charges.length > 0) {
                 autoChargesData = data.charges;
                 renderAutoCharges(data);
                 calculateTotals();
@@ -823,7 +859,6 @@ async function fetchAvailableCash() {
             calculateTotals();
         }
     }
-
     function renderAutoCharges(data) {
         if (!els.autoChargesRows || !els.autoChargesHidden) return;
         if (els.autoChargesPlaceholder) els.autoChargesPlaceholder.style.display = 'none';
@@ -877,7 +912,7 @@ async function fetchAvailableCash() {
 
     function bindAutoChargeFetchListeners() {
         const debouncedFetch = debounce(fetchAutoCharges, 500);
-        [els.tradeDt, els.qty, els.price, els.side, els.broker, els.execVenue].forEach(field => {
+        [els.tradeDt, els.qty, els.price, els.side, els.broker, els.execVenue, els.assetClass, els.tradeCcy].forEach(field => {
             if (field) {
                 field.addEventListener('input', debouncedFetch);
                 field.addEventListener('change', debouncedFetch);

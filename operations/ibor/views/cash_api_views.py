@@ -20,8 +20,8 @@ def get_account_state_api(request):
 
     # 2. Fetch account metadata (Currency)
     try:
-        account = Account.objects.select_related('currency').get(pk=account_id)
-        currency_code = getattr(account.currency, 'code', str(account.currency))
+        account = Account.objects.select_related('ccy').get(pk=account_id)
+        currency_code = getattr(account.ccy, 'code', str(account.ccy))
     except Account.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Account not found'}, status=404)
 

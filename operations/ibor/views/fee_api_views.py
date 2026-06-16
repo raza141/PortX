@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# operations/ibor/views/fee_api_views.py
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -15,7 +18,7 @@ def ibor_fee_quote_api(request):
         trade_dt_raw = request.GET.get("trade_dt", "")
         quantity_raw = request.GET.get("quantity", "")
         price_raw = request.GET.get("price", "")
-        side = request.GET.get("side", "").strip()
+        side = request.GET.get("side", "").strip().upper()
         source_system = request.GET.get("source_system", "").strip()
 
         broker_id = _to_int(request.GET.get("broker_id"))
@@ -23,6 +26,9 @@ def ibor_fee_quote_api(request):
         asset_class_id = _to_int(request.GET.get("asset_class_id"))
         asset_sub_class_id = _to_int(request.GET.get("asset_sub_class_id"))
         trade_ccy_id = _to_int(request.GET.get("trade_ccy_id"))
+
+        instrument_id = _to_int(request.GET.get("instrument_id"))
+        security_id = _to_int(request.GET.get("security_id"))
 
         if not trade_dt_raw:
             return JsonResponse({"ok": False, "message": "trade_dt is required."}, status=400)
@@ -40,6 +46,22 @@ def ibor_fee_quote_api(request):
         quantity = Decimal(quantity_raw)
         price = Decimal(price_raw)
 
+        resolved_from = "request"
+
+        if asset_class_id is None or asset_sub_class_id is None:
+            resolved = _resolve_instrument_or_security(
+                instrument_id=instrument_id,
+                security_id=security_id,
+            )
+
+            if asset_class_id is None:
+                asset_class_id = resolved.get("asset_class_id")
+
+            if asset_sub_class_id is None:
+                asset_sub_class_id = resolved.get("asset_sub_class_id")
+
+            resolved_from = resolved.get("resolved_from", "request")
+
         result = IborFeeEngine.quote_fees(
             trade_dt=trade_dt,
             quantity=quantity,
@@ -53,7 +75,25 @@ def ibor_fee_quote_api(request):
             source_system=source_system,
         )
 
-        return JsonResponse({"ok": True, **result})
+        return JsonResponse({
+            "ok": True,
+            **result,
+            "debug": {
+                "trade_dt": trade_dt_raw,
+                "quantity": quantity_raw,
+                "price": price_raw,
+                "side": side,
+                "broker_id": broker_id,
+                "exec_venue_id": exec_venue_id,
+                "asset_class_id": asset_class_id,
+                "asset_sub_class_id": asset_sub_class_id,
+                "trade_ccy_id": trade_ccy_id,
+                "instrument_id": instrument_id,
+                "security_id": security_id,
+                "source_system": source_system,
+                "resolved_from": resolved_from,
+            }
+        })
 
     except InvalidOperation:
         return JsonResponse({"ok": False, "message": "quantity or price is not a valid decimal."}, status=400)
@@ -65,63 +105,20 @@ def ibor_fee_quote_api(request):
         return JsonResponse({"ok": False, "message": str(exc)}, status=500)
 
 
-def _to_int(value):
-    if value in (None, "", "null", "None"):
-        return None
-    return int(value)
-
-
 @require_GET
 def get_fee_schedule_rules_api(request):
-    """
-    API endpoint to fetch fee rules for auto-populating charges in trade form.
-    
-    Called when user selects broker, asset class, and enters share price.
-    Returns ALL fee rules (multiple lines) from the best matching schedule.
-    
-    GET Parameters:
-        - trade_dt: Trade date (YYYY-MM-DD)
-        - broker_id: Broker ID
-        - exec_venue_id: Exchange ID (optional)
-        - asset_class_id: Asset class ID (optional)
-        - asset_sub_class_id: Asset sub-class ID (optional)
-        - trade_ccy_id: Trade currency ID (optional)
-        - share_price: Share price for tiered pricing (optional)
-        - side: BUY or SELL (optional)
-    
-    Returns:
-        JSON with:
-        {
-            "success": true,
-            "fee_rules": [
-                {
-                    "id": 1,
-                    "sequence_no": 10,
-                    "charge_type_cd": "Commission",
-                    "description": "Brokerage Commission",
-                    "calc_method": "Percent of gross",
-                    "rate": "0.15",
-                    "currency_id": "PKR",
-                    ...
-                },
-                {...}
-            ],
-            "count": 3
-        }
-    """
     try:
         from operations.ibor.services.fee_selector import IborFeeScheduleSelector
-        
-        # Parse parameters
+
         trade_dt_raw = request.GET.get("trade_dt", "")
         if not trade_dt_raw:
             return JsonResponse({
-                "success": False, 
+                "success": False,
                 "error": "trade_dt is required"
             }, status=400)
-        
+
         trade_dt = datetime.strptime(trade_dt_raw, "%Y-%m-%d").date()
-        
+
         broker_id = _to_int(request.GET.get("broker_id"))
         exec_venue_id = _to_int(request.GET.get("exec_venue_id"))
         asset_class_id = _to_int(request.GET.get("asset_class_id"))
@@ -129,17 +126,34 @@ def get_fee_schedule_rules_api(request):
         trade_ccy_id = _to_int(request.GET.get("trade_ccy_id"))
         side = request.GET.get("side", "").strip().upper()
         source_system = request.GET.get("source_system", "").strip()
-        
-        # Parse share_price for tiered pricing
+
+        instrument_id = _to_int(request.GET.get("instrument_id"))
+        security_id = _to_int(request.GET.get("security_id"))
+
+        resolved_from = "request"
+
+        if asset_class_id is None or asset_sub_class_id is None:
+            resolved = _resolve_instrument_or_security(
+                instrument_id=instrument_id,
+                security_id=security_id,
+            )
+
+            if asset_class_id is None:
+                asset_class_id = resolved.get("asset_class_id")
+
+            if asset_sub_class_id is None:
+                asset_sub_class_id = resolved.get("asset_sub_class_id")
+
+            resolved_from = resolved.get("resolved_from", "request")
+
         share_price_raw = request.GET.get("share_price")
         share_price = None
         if share_price_raw:
             try:
                 share_price = Decimal(share_price_raw)
             except (InvalidOperation, ValueError):
-                pass  # Ignore invalid share price
-        
-        # Get all fee rules for matching schedule
+                pass
+
         fee_rules = IborFeeScheduleSelector.get_fee_rules_for_trade(
             trade_dt=trade_dt,
             broker_id=broker_id,
@@ -151,13 +165,24 @@ def get_fee_schedule_rules_api(request):
             source_system=source_system,
             share_price=share_price,
         )
-        
+
         return JsonResponse({
             "success": True,
             "fee_rules": fee_rules,
             "count": len(fee_rules),
+            "debug": {
+                "broker_id": broker_id,
+                "exec_venue_id": exec_venue_id,
+                "asset_class_id": asset_class_id,
+                "asset_sub_class_id": asset_sub_class_id,
+                "trade_ccy_id": trade_ccy_id,
+                "instrument_id": instrument_id,
+                "security_id": security_id,
+                "source_system": source_system,
+                "resolved_from": resolved_from,
+            }
         })
-        
+
     except ValueError as e:
         return JsonResponse({
             "success": False,
@@ -168,3 +193,62 @@ def get_fee_schedule_rules_api(request):
             "success": False,
             "error": str(e)
         }, status=500)
+
+
+def _to_int(value):
+    if value in (None, "", "null", "None"):
+        return None
+    return int(value)
+
+
+def _resolve_instrument_or_security(instrument_id=None, security_id=None):
+    result = {
+        "asset_class_id": None,
+        "asset_sub_class_id": None,
+        "resolved_from": "request",
+    }
+
+    try:
+        from refdata.instruments.models import SecurityListing, AssetSubClass
+    except Exception:
+        return result
+
+    lookup_security_id = instrument_id or security_id
+    if not lookup_security_id:
+        return result
+
+    try:
+        # First try assuming lookup_security_id is SecurityMaster.security_id
+        listing = (
+            SecurityListing.objects
+            .select_related("security")
+            .filter(security_id=lookup_security_id)
+            .first()
+        )
+        
+        # If not found, try assuming lookup_security_id is SecurityListing.pk (security_listing_id)
+        if not listing:
+            listing = (
+                SecurityListing.objects
+                .select_related("security")
+                .filter(pk=lookup_security_id)
+                .first()
+            )
+
+        if not listing or not listing.security:
+            return result
+
+        sub_class_id = getattr(listing.security, "sub_class_id", None)
+        result["asset_sub_class_id"] = sub_class_id
+        result["resolved_from"] = "security_listing"
+
+        if sub_class_id:
+            sub_cls = AssetSubClass.objects.filter(sub_asset_class_id=sub_class_id).first()
+
+            if sub_cls:
+                result["asset_class_id"] = getattr(sub_cls, "asset_class_id", None)
+
+        return result
+
+    except Exception:
+        return result
