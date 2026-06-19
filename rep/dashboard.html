@@ -1,0 +1,155 @@
+{% extends "governance/kyc/base.html" %}
+
+{% block page_title %}PortX · KYC Dashboard{% endblock %}
+{% block ticker_label %}Overview{% endblock %}
+{% block ticker_badge %}KYC{% endblock %}
+
+{% block ticker_stats %}
+<div class="kyc-ticker-stat">
+    <span>Total Profiles</span>
+    <span class="kyc-ticker-stat-value">{{ total_profiles|default:profiles|length }}</span>
+</div>
+<div class="kyc-ticker-stat">
+    <span>Pending Review</span>
+    <span class="kyc-ticker-stat-value">{{ pending_count|default:"0" }}</span>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:18px;}
+    .stat-label{font-size:13px;font-weight:600;color:var(--text-muted);}
+    .stat-value{font-size:30px;font-weight:800;line-height:1;margin-top:10px;}
+    .stat-value.approved{color:var(--success);}
+    .stat-value.pending{color:#d97706;}
+    .stat-value.declined{color:var(--danger);}
+    .section-stack{display:grid;gap:20px;}
+    .empty-box{padding:26px 18px;text-align:center;color:var(--text-muted);font-size:14px;}
+    .status-pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+    .status-pill.new,.status-pill.in_review{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.22);}
+    .status-pill.approved{background:rgba(34,197,94,.12);color:#15803d;border:1px solid rgba(34,197,94,.22);}
+    .status-pill.declined,.status-pill.expired{background:rgba(239,68,68,.12);color:#b91c1c;border:1px solid rgba(239,68,68,.22);}
+    .quick-links{display:grid;gap:10px;}
+    .quick-link{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-weight:600;}
+    .quick-link:hover{border-color:#cbd5e1;background:#f8fafc;}
+    .quick-meta{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;}
+    @media (max-width: 900px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media (max-width: 640px){.stats-grid{grid-template-columns:1fr;}}
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="section-stack">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">KYC Dashboard</div>
+            <div class="card-subtitle">Overview of KYC profiles, onboarding activity, and current workflow status.</div>
+        </div>
+        <div class="card-body">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Profiles</div>
+                    <div class="stat-value">{{ total_profiles|default:profiles|length }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Approved</div>
+                    <div class="stat-value approved">{{ approved_count|default:"0" }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending Review</div>
+                    <div class="stat-value pending">{{ pending_count|default:"0" }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Declined</div>
+                    <div class="stat-value declined">{{ declined_count|default:"0" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Recent Profiles</div>
+            <div class="card-subtitle">Latest onboarding records and workflow activity.</div>
+        </div>
+        <div class="card-body" style="padding:0;">
+            <div class="table-wrap" style="border:none;box-shadow:none;border-radius:0;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:90px;">ID</th>
+                            <th>Client</th>
+                            <th style="width:180px;">Status</th>
+                            <th style="width:220px;">Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in profiles %}
+                        <tr>
+                            <td>#{{ p.id }}</td>
+                            <td><strong>{{ p.client.legal_name }}</strong></td>
+                            <td><span class="status-pill {{ p.status|lower }}">{{ p.status }}</span></td>
+                            <td>{{ p.created_at }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4"><div class="empty-box">No KYC profiles available yet.</div></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Workflow Summary</div>
+    <div class="summary-list">
+        <div class="summary-item">
+            <span class="summary-label">Approved</span>
+            <span class="summary-value positive">{{ approved_count|default:"0" }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Pending Review</span>
+            <span class="summary-value">{{ pending_count|default:"0" }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Declined</span>
+            <span class="summary-value negative">{{ declined_count|default:"0" }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Live Preview</div>
+    <div class="preview-box">
+        KYC dashboard is ready for onboarding workflow, screening, review queue, and approval actions.
+    </div>
+</div>
+
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Quick Actions</div>
+    <div class="quick-links">
+        <a href="{% url 'kyc:submit' %}" class="quick-link">
+            <span>Submit New KYC</span>
+            <span class="quick-meta">New</span>
+        </a>
+        <a href="#" class="quick-link">
+            <span>Run Screening</span>
+            <span class="quick-meta">AML</span>
+        </a>
+        <a href="#" class="quick-link">
+            <span>Open Review Queue</span>
+            <span class="quick-meta">Queue</span>
+        </a>
+        <a href="#" class="quick-link">
+            <span>Download Summary</span>
+            <span class="quick-meta">Report</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

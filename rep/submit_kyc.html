@@ -1,0 +1,165 @@
+{% extends "governance/kyc/base.html" %}
+
+{% block page_title %}PortX · Submit KYC{% endblock %}
+{% block ticker_label %}Onboarding{% endblock %}
+{% block ticker_badge %}KYC{% endblock %}
+
+{% block extra_head %}
+<style>
+    .section-stack{display:grid;gap:20px;}
+    .helper-text{margin-top:6px;font-size:12px;color:var(--text-light);}
+    .upload-box{border:1px dashed #cbd5e1;background:var(--surface-2);border-radius:12px;padding:22px;}
+    .upload-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+    .upload-text{font-size:13px;color:var(--text-muted);margin-bottom:14px;}
+    .form-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px;}
+    .btn-inline{width:auto;min-width:160px;}
+    .tip-list{display:grid;gap:12px;}
+    .tip-item{padding:14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);}
+    .tip-item strong{display:block;margin-bottom:4px;font-size:14px;color:var(--text);}
+    .tip-item span{font-size:13px;color:var(--text-muted);line-height:1.5;}
+</style>
+{% endblock %}
+
+{% block main_content %}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="section-stack">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Submit New KYC</div>
+                <div class="card-subtitle">Create a client onboarding record and upload the supporting due diligence documents.</div>
+            </div>
+            <div class="card-body">
+                <div class="field full" style="margin-bottom:18px;">
+                    <label for="client_type">Client Type</label>
+                    <select id="client_type" name="client_type">
+                        {% for value, label in client_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="legal_name">Legal Name</label>
+                        <input type="text" id="legal_name" name="legal_name" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="display_name">Display Name</label>
+                        <input type="text" id="display_name" name="display_name">
+                    </div>
+
+                    <div class="field">
+                        <label for="primary_email">Primary Email</label>
+                        <input type="email" id="primary_email" name="primary_email">
+                    </div>
+
+                    <div class="field">
+                        <label for="primary_phone">Primary Phone</label>
+                        <input type="text" id="primary_phone" name="primary_phone">
+                    </div>
+
+                    <div class="field">
+                        <label for="country_of_residence">Country of Residence</label>
+                        <select id="country_of_residence" name="country_of_residence">
+                            <option value="">Select country</option>
+                            {% for country in countries %}
+                                <option value="{{ country.country_id }}">{{ country.country_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="field full">
+                        <label for="primary_address">Primary Address</label>
+                        <textarea id="primary_address" name="primary_address"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Identification</div>
+                <div class="card-subtitle">Store key identifiers used for regulatory checks and due diligence.</div>
+            </div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="national_id">National ID</label>
+                        <input type="text" id="national_id" name="national_id">
+                    </div>
+
+                    <div class="field">
+                        <label for="passport_no">Passport Number</label>
+                        <input type="text" id="passport_no" name="passport_no">
+                    </div>
+
+                    <div class="field">
+                        <label for="registration_number">Registration Number</label>
+                        <input type="text" id="registration_number" name="registration_number">
+                    </div>
+
+                    <div class="field">
+                        <label for="lei">LEI</label>
+                        <input type="text" id="lei" name="lei">
+                        <div class="helper-text">Use for corporate entities when available.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Documents</div>
+                <div class="card-subtitle">Upload identification, proof of address, and any required tax or incorporation records.</div>
+            </div>
+            <div class="card-body">
+                <div class="upload-box">
+                    <div class="upload-title">Supporting Documents</div>
+                    <div class="upload-text">Accepted examples: passport, national ID, utility bill, FATCA form, certificate of incorporation.</div>
+                    <input type="file" id="documents" name="documents" multiple>
+                    <div class="helper-text">Allowed formats should be validated in backend, e.g. PDF, PNG, JPG.</div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-inline">Submit KYC</button>
+                    <a href="{% url 'kyc:dashboard' %}" class="btn btn-secondary btn-inline">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Submission Notes</div>
+    <div class="tip-list">
+        <div class="tip-item">
+            <strong>Identity first</strong>
+            <span>Capture legal name and identifiers exactly as shown on official documents.</span>
+        </div>
+        <div class="tip-item">
+            <strong>Document quality</strong>
+            <span>Use readable, complete scans with valid expiry dates and no cropped edges.</span>
+        </div>
+        <div class="tip-item">
+            <strong>Corporate clients</strong>
+            <span>For companies, also collect registration details, incorporation records, and UBO support.</span>
+        </div>
+        <div class="tip-item">
+            <strong>Tax review</strong>
+            <span>FATCA and CRS details should be reviewed before profile approval.</span>
+        </div>
+    </div>
+</div>
+
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Live Preview</div>
+    <div class="preview-box">
+        New onboarding record for individual or corporate KYC intake with document collection and identifier capture.
+    </div>
+</div>
+{% endblock %}
