@@ -1,0 +1,240 @@
+/*
+ * governance/kyc/static/kyc/css/kyc.css
+ *
+ * KYC-specific layout only. Typography, theme and color come from the platform
+ * shell / Claude Design tab — this file consumes those as CSS variables and does
+ * not hard-code brand hex values. Fallbacks are neutral so the module still reads
+ * if a token is absent.
+ */
+
+.kyc-shell {
+  --kyc-gap: 1rem;
+  --kyc-radius: var(--px-radius, 10px);
+  --kyc-border: var(--px-border-color, rgba(0, 0, 0, 0.10));
+  --kyc-surface: var(--px-surface, #ffffff);
+  --kyc-muted: var(--px-text-muted, #64748b);
+  --kyc-primary: var(--px-primary, #0f766e);
+  --kyc-ok: var(--px-success, #15803d);
+  --kyc-bad: var(--px-danger, #b91c1c);
+  --kyc-warn: var(--px-warning, #b45309);
+  font-family: var(--px-font-ui, "Inter", system-ui, sans-serif);
+  color: var(--px-text, #0f172a);
+}
+
+.kyc-num {
+  font-family: var(--px-font-mono, "IBM Plex Mono", "Courier New", monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Header ------------------------------------------------------------------ */
+.kyc-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--kyc-gap);
+  margin-bottom: 1.25rem;
+}
+.kyc-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kyc-muted);
+}
+.kyc-title { margin: 0.15rem 0 0; font-size: 1.5rem; font-weight: 650; }
+.kyc-header__actions { display: flex; gap: 0.5rem; }
+
+/* Stats ------------------------------------------------------------------- */
+.kyc-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: var(--kyc-gap);
+  margin-bottom: 1.5rem;
+}
+.kyc-stat {
+  background: var(--kyc-surface);
+  border: 1px solid var(--kyc-border);
+  border-radius: var(--kyc-radius);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.kyc-stat__value { font-size: 1.5rem; font-weight: 650; }
+.kyc-stat__label { font-size: 0.78rem; color: var(--kyc-muted); }
+.kyc-stat--ok .kyc-stat__value { color: var(--kyc-ok); }
+.kyc-stat--bad .kyc-stat__value { color: var(--kyc-bad); }
+
+/* Cards / tables ---------------------------------------------------------- */
+.kyc-card {
+  background: var(--kyc-surface);
+  border: 1px solid var(--kyc-border);
+  border-radius: var(--kyc-radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.kyc-card--narrow { max-width: 640px; }
+.kyc-card--narrow,
+.kyc-card__title { margin-top: 0; }
+.kyc-card__title { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.75rem; }
+.kyc-card__hint { color: var(--kyc-muted); margin-top: 0; }
+
+.kyc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.kyc-table th, .kyc-table td {
+  text-align: left;
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--kyc-border);
+}
+.kyc-table th { font-weight: 600; color: var(--kyc-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.kyc-empty { color: var(--kyc-muted); text-align: center; padding: 1.5rem; }
+.kyc-muted { color: var(--kyc-muted); }
+.kyc-link, .kyc-link:visited { color: var(--kyc-primary); text-decoration: none; font-weight: 600; }
+.kyc-link:hover { text-decoration: underline; }
+
+/* Badges ------------------------------------------------------------------ */
+.kyc-badge {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border: 1px solid var(--kyc-border);
+}
+.kyc-badge--draft { color: var(--kyc-muted); }
+.kyc-badge--submitted,
+.kyc-badge--under_review { color: var(--kyc-primary); }
+.kyc-badge--addl_info,
+.kyc-badge--escalated { color: var(--kyc-warn); }
+.kyc-badge--approved,
+.kyc-badge--verified { color: var(--kyc-ok); }
+.kyc-badge--rejected,
+.kyc-badge--unverified { color: var(--kyc-bad); }
+
+/* Forms ------------------------------------------------------------------- */
+.kyc-form { display: flex; flex-direction: column; gap: 0.85rem; }
+.kyc-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.kyc-label { font-size: 0.82rem; font-weight: 600; }
+.kyc-help { font-size: 0.74rem; color: var(--kyc-muted); }
+.kyc-error { font-size: 0.76rem; color: var(--kyc-bad); }
+.kyc-subhead { font-size: 0.95rem; font-weight: 650; margin: 1rem 0 0.25rem; }
+
+.kyc-input,
+.kyc-form select,
+.kyc-form input[type="text"],
+.kyc-form input[type="date"],
+.kyc-form input[type="email"],
+.kyc-form input[type="number"],
+.kyc-form textarea {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--kyc-border);
+  border-radius: 8px;
+  background: var(--kyc-surface);
+  font: inherit;
+  color: inherit;
+}
+.kyc-input:focus,
+.kyc-form select:focus,
+.kyc-form input[type="text"]:focus,
+.kyc-form input[type="date"]:focus,
+.kyc-form input[type="email"]:focus,
+.kyc-form input[type="number"]:focus,
+.kyc-form textarea:focus {
+  outline: 2px solid var(--kyc-primary);
+  outline-offset: 1px;
+}
+
+.kyc-form__actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
+
+/* Buttons ----------------------------------------------------------------- */
+.kyc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--kyc-border);
+  background: var(--kyc-surface);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.kyc-btn:hover { border-color: var(--kyc-primary); }
+.kyc-btn--primary { background: var(--kyc-primary); border-color: var(--kyc-primary); color: #fff; }
+.kyc-btn--primary[disabled] { opacity: 0.5; cursor: not-allowed; }
+.kyc-btn--ghost { background: transparent; }
+.kyc-btn--ok { color: var(--kyc-ok); }
+.kyc-btn--bad { color: var(--kyc-bad); }
+.kyc-btn--xs { padding: 0.25rem 0.5rem; font-size: 0.76rem; }
+
+/* Wizard ------------------------------------------------------------------ */
+.kyc-steps { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.kyc-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--kyc-border);
+  border-radius: 999px;
+  background: var(--kyc-surface);
+  cursor: pointer;
+  font: inherit;
+}
+.kyc-step__dot {
+  width: 0.6rem; height: 0.6rem; border-radius: 50%;
+  border: 2px solid var(--kyc-muted);
+}
+.kyc-step.is-complete .kyc-step__dot { background: var(--kyc-ok); border-color: var(--kyc-ok); }
+.kyc-step[aria-current="step"] { border-color: var(--kyc-primary); }
+
+.kyc-panel {
+  background: var(--kyc-surface);
+  border: 1px solid var(--kyc-border);
+  border-radius: var(--kyc-radius);
+  padding: 1.25rem;
+  min-height: 160px;
+}
+.kyc-wizard__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Repeating rows ---------------------------------------------------------- */
+.kyc-rows { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.6rem; }
+.kyc-row {
+  border: 1px solid var(--kyc-border);
+  border-radius: 8px;
+  padding: 0.6rem;
+  background: var(--kyc-surface);
+}
+.kyc-row__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+  align-items: end;
+}
+.kyc-field--del, .kyc-field--check { flex-direction: row; align-items: center; gap: 0.35rem; }
+
+/* Callouts ---------------------------------------------------------------- */
+.kyc-callout { border-radius: 8px; padding: 0.75rem 0.9rem; margin-bottom: 1rem; border: 1px solid var(--kyc-border); }
+.kyc-callout--warn { border-color: var(--kyc-warn); }
+.kyc-callout--ok { border-color: var(--kyc-ok); }
+.kyc-callout ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+
+.kyc-decision { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+@media (max-width: 640px) {
+  .kyc-header { flex-direction: column; align-items: flex-start; }
+  .kyc-wizard__footer { flex-direction: column; align-items: stretch; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

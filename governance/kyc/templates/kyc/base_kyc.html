@@ -1,0 +1,14 @@
+{% extends "kyc/base.html" %}
+{% load static %}
+
+{# Thin layer over the KYC core (base.html). Adds the AJAX wizard's stylesheet and
+   script for pages that use repeating-row formsets and section auto-save. Pages
+   that don't need the wizard extend base.html directly. #}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'kyc/css/kyc.css' %}">
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="{% static 'kyc/js/kyc.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,80 @@
+### 1. SYSTEM CHECK
+System check identified no issues (0 silenced).
+
+### 2. STATIC RESOLVES (css + js)
+Found 'kyc/css/kyc.css' here:
+  /Volumes/PSXDatabase/PortX/governance/kyc/static/kyc/css/kyc.css
+Found 'kyc/js/kyc.js' here:
+  /Volumes/PSXDatabase/PortX/governance/kyc/static/kyc/js/kyc.js
+
+### 3. TEMPLATES RESOLVE (every name a view renders)
+67 objects imported automatically (use -v 2 for details).
+
+OK   kyc/dashboard.html
+OK   kyc/start.html
+FAIL kyc/wizard.html -> kyc/wizard.html
+OK   kyc/review_queue.html
+OK   kyc/escalations.html
+OK   kyc/base.html
+OK   kyc/base_kyc.html
+
+### 4. URL NAMES REVERSE
+67 objects imported automatically (use -v 2 for details).
+
+FAIL dashboard 'kyc' is not a registered namespace
+FAIL start 'kyc' is not a registered namespace
+FAIL review-queue 'kyc' is not a registered namespace
+FAIL escalations 'kyc' is not a registered namespace
+FAIL wizard 'kyc' is not a registered namespace
+FAIL submit 'kyc' is not a registered namespace
+FAIL decide 'kyc' is not a registered namespace
+FAIL upload-document 'kyc' is not a registered namespace
+FAIL ajax-validate 'kyc' is not a registered namespace
+
+### 5. STALE 'market' LOOKUPS (should now read onboarding_market)
+zsh: no matches found: --include=*.py
+governance/kyc/templates/kyc/escalations.html:28:                    <td>{{ app.market }}</td>
+
+### 6. MIGRATION DRY RUN
+Migrations for 'masters':
+  refdata/masters/migrations/0012_counterparty_platform_executionvenue.py
+    + Create model Counterparty
+    + Create model Platform
+    + Create model ExecutionVenue
+Migrations for 'kyc':
+  governance/kyc/migrations/0001_initial.py
+    + Create model KYCApplication
+    + Create model KYCEmployment
+    + Create model KYCJointHolder
+    + Create model KYCIdentityDocument
+    + Create model KYCDocument
+    + Create model KYCNominee
+    + Create model KYCPersonalInfo
+    + Create model KYCPowerOfAttorney
+    + Create model KYCReferralSource
+    + Add field referral_source to kycapplication
+    + Create model KYCResidence
+    + Create model KYCResidencyTax
+    + Create model KYCSourceOfWealth
+    + Create model KYCStatusLog
+    + Create model KYCThirdPartyCheck
+    + Create model KYCBankAccount
+    + Create constraint uq_kyc_joint_seq_per_app on model kycjointholder
+    + Create constraint ck_kyc_joint_holder_sequence_2_5 on model kycjointholder
+    + Create constraint ck_kyc_joint_holder_share_0_100 on model kycjointholder
+    + Create index ix_kyc_iddoc_app_type on field(s) application, identity_doc_type of model kycidentitydocument
+    + Create constraint ck_kyc_iddoc_expiry_after_issue on model kycidentitydocument
+    + Create index ix_kyc_doc_app_type on field(s) application, document_type of model kycdocument
+    + Create index ix_kyc_doc_verif on field(s) verification_status of model kycdocument
+    + Create index ix_kyc_nominee_app on field(s) application of model kycnominee
+    + Create constraint ck_kyc_nominee_share_0_100 on model kycnominee
+    + Create constraint ck_kyc_personal_principal_share_0_100 on model kycpersonalinfo
+    + Create index ix_kyc_poa_app on field(s) application of model kycpowerofattorney
+    + Create constraint ck_kyc_poa_passport_expiry_after_issue on model kycpowerofattorney
+    + Create index ix_kyc_ref_type on field(s) referral_type of model kycreferralsource
+    + Create index ix_kyc_app_market_status on field(s) onboarding_market, application_status of model kycapplication
+    + Create index ix_kyc_taxres_app_jh on field(s) application, joint_holder of model kycresidencytax
+    + Create constraint ck_kyc_taxres_tin_or_reason on model kycresidencytax
+    + Create index ix_kyc_statuslog_app_ts on field(s) application, created_at of model kycstatuslog
+    + Create index ix_kyc_tpc_app_provider on field(s) application, provider of model kycthirdpartycheck
+    + Create constraint ck_kyc_tpc_completed_after_requested on model kycthirdpartycheck

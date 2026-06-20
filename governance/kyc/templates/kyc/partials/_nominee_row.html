@@ -1,0 +1,28 @@
+{# One nominee row (share_percentage required). Expects `form` from the formset or formset.empty_form. #}
+<div class="kyc-row" data-row="nominee">
+  {{ form.id }}
+  <div class="kyc-row__grid">
+    <div class="kyc-field">
+      {{ form.nominee_name.label_tag }}
+      {{ form.nominee_name }}
+    </div>
+    <div class="kyc-field">
+      {{ form.relation.label_tag }}
+      {{ form.relation }}
+    </div>
+    <div class="kyc-field">
+      {{ form.national_id_number.label_tag }}
+      {{ form.national_id_number }}
+    </div>
+    <div class="kyc-field">
+      {{ form.share_percentage.label_tag }}
+      {{ form.share_percentage }}
+    </div>
+    <div class="kyc-field kyc-field--del">
+  {{ form.DELETE }}
+  <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>
+    Remove
+  </button>
+</div>
+  </div>
+</div>

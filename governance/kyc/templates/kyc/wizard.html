@@ -1,0 +1,51 @@
+{% extends "kyc/base_kyc.html" %}
+{% block nav_submit %}active{% endblock %}
+
+{% block kyc_title %}{{ application.application_number }}{% endblock %}
+
+{% block kyc_actions %}
+  <span class="kyc-badge kyc-badge--{{ application.application_status|lower }}">
+    {{ application.get_application_status_display }}
+  </span>
+{% endblock %}
+
+{% block kyc_content %}
+  <div class="kyc-wizard"
+       data-application-id="{{ application.pk }}"
+       data-validate-url="{% url 'kyc:ajax-validate' application.pk %}">
+
+    <nav class="kyc-steps" aria-label="KYC sections">
+      {% for key, done in section_status.items %}
+        <button type="button"
+                class="kyc-step {% if done %}is-complete{% endif %}"
+                data-section="{{ key }}"
+                aria-current="{% if forloop.first %}step{% endif %}">
+          <span class="kyc-step__dot" aria-hidden="true"></span>
+          <span class="kyc-step__label">{{ key|title }}</span>
+        </button>
+      {% endfor %}
+    </nav>
+
+    <section class="kyc-panel" id="kyc-section-host">
+      {# Section bodies are progressively enhanced; server-rendered fallbacks live
+         in section_1..4.html and are swapped in by kyc.js via the save endpoints. #}
+      {% block wizard_section %}
+        <p class="kyc-muted">Select a section to begin.</p>
+      {% endblock %}
+    </section>
+
+    <footer class="kyc-wizard__footer">
+      <div class="kyc-submit-errors" id="kyc-submit-errors">
+        {% for error in submit_errors %}<p class="kyc-error">{{ error }}</p>{% endfor %}
+      </div>
+      <form method="post" action="{% url 'kyc:submit' application.pk %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="kyc-btn kyc-btn--primary"
+                {% if not submittable %}disabled{% endif %}>
+          {% if application.application_status == 'ADDL_INFO' %}Resubmit{% else %}Submit for review{% endif %}
+        </button>
+      </form>
+    </footer>
+  </div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "kyc/base.html" %}
+
+{% block page_title %}PortX · Submit KYC{% endblock %}
+{% block nav_submit %}active{% endblock %}
+{% block ticker_label %}Submit KYC{% endblock %}
+{% block ticker_badge %}Individual{% endblock %}
+
+{% block non_field_errors %}
+{% if form.non_field_errors %}
+<div style="padding:12px 28px 0;"><div class="error-banner">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div></div>
+{% endif %}
+{% endblock %}
+
+{% block page_open %}<form method="post" action="{% url 'kyc:start' %}" id="kyc-start-form">{% csrf_token %}{% endblock %}
+
+{% block main_content %}
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Submit KYC</h2>
+        <div class="card-subtitle">Initiate an individual onboarding file. A reference number is allocated automatically; detailed sections are captured next.</div>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            {% for field in form %}
+            <div class="field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<span class="hint">{{ field.help_text }}</span>{% endif %}
+                {% for e in field.errors %}<span class="err">{{ e }}</span>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">What happens next</div>
+    <div class="preview-box">
+        On continue, a draft application is created and numbered (e.g. PSX-KYC-2026-000001).
+        You then complete personal, residence/tax, source-of-wealth and document sections
+        before submitting for compliance review.
+    </div>
+</div>
+<div class="sidebar-actions">
+    <button type="submit" class="btn btn-primary">Continue</button>
+    <a href="{% url 'kyc:dashboard' %}" class="btn btn-secondary">Cancel</a>
+</div>
+{% endblock %}
+
+{% block page_close %}</form>{% endblock %}

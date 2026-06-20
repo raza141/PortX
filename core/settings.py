@@ -26,22 +26,27 @@ SECRET_KEY = "django-insecure-ld7(c0z70a24oeo#1puflwc65@o59oddn4x^!90=$xx9y^38a0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
     "django.contrib.admin",
-    "django_extensions", # for shell working (it avooid importing)
+    "django_extensions", # for shell working (it avoid importing)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Shared / Identity - Users Creation and Authentication
+    "users.apps.UsersConfig",
+
     # Governance
     "governance.crm.apps.CrmConfig",
     "governance.policies.apps.PoliciesConfig",
+    # KYC app
+    "governance.kyc.apps.KycConfig",
     # Ref Data
     "refdata.masters.apps.MastersConfig",
     "refdata.taxonomy.apps.TaxonomyConfig",
@@ -141,6 +146,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+
+# Media (file uploads) - ensure MEDIA_ROOT is secure in production and/or use a custom storage backend
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

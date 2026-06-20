@@ -1,0 +1,28 @@
+{# One power-of-attorney / authorized person row. Expects `form` from the formset or formset.empty_form. #}
+<div class="kyc-row" data-row="poa">
+  {{ form.id }}
+  <div class="kyc-row__grid">
+    <div class="kyc-field">
+      {{ form.person_name.label_tag }}
+      {{ form.person_name }}
+    </div>
+    <div class="kyc-field">
+      {{ form.document_type.label_tag }}
+      {{ form.document_type }}
+    </div>
+    <div class="kyc-field">
+      {{ form.passport_number.label_tag }}
+      {{ form.passport_number }}
+    </div>
+    <div class="kyc-field">
+      {{ form.national_id_number.label_tag }}
+      {{ form.national_id_number }}
+    </div>
+    <div class="kyc-field kyc-field--del">
+  {{ form.DELETE }}
+  <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>
+    Remove
+  </button>
+</div>
+  </div>
+</div>

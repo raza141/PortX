@@ -1,0 +1,56 @@
+{% extends "kyc/base_kyc.html" %}
+
+{% block page_title %}PortX · Escalations{% endblock %}
+{% block nav_review %}active{% endblock %}
+{% block ticker_label %}Escalations{% endblock %}
+{% block ticker_badge %}Senior Management{% endblock %}
+
+{% block ticker_stats %}
+    <span class="ibor-ticker-stat"><span>Escalated</span><span class="ibor-ticker-stat-value">{{ applications|length }}</span></span>
+{% endblock %}
+
+{% block main_content %}
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Escalated Applications</h2>
+        <div class="card-subtitle">Files raised to senior management for final approval or rejection.</div>
+    </div>
+    <div class="card-body" style="padding-left:0;padding-right:0;">
+        <table class="table" id="kyc-review-table">
+            <thead>
+                <tr><th style="padding-left:22px;">ID</th><th>Client</th><th>Market</th><th>Risk</th><th>Opened</th><th class="right" style="padding-right:22px;">Decision</th></tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                <tr data-application-id="{{ app.pk }}" data-decide-url="{% url 'kyc:decide' app.pk %}">
+                    <td class="mono" style="padding-left:22px;">{{ app.application_number }}</td>
+                    <td>{% if app.personal_info %}{{ app.personal_info.first_name }} {{ app.personal_info.last_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
+                    <td>{{ app.onboarding_market }}</td>
+                    <td>{% if app.risk_rating %}<span class="badge {% if app.risk_rating == 'H' %}rejected{% elif app.risk_rating == 'M' %}escalated{% else %}approved{% endif %}">{{ app.get_risk_rating_display }}</span>{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
+                    <td class="mono">{{ app.kyc_opening_date|date:"Y-m-d" }}</td>
+                    <td class="right" style="padding-right:22px;">
+                        <div class="row-actions">
+                            <button class="btn btn-xs ok" data-action="APPROVE">Approve</button>
+                            <button class="btn btn-xs bad" data-action="REJECT">Reject</button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="empty">No escalated applications.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Escalation Summary</div>
+    <div class="summary-row"><span class="summary-label">Awaiting decision</span><span class="summary-value warn">{{ applications|length }}</span></div>
+</div>
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Authority</div>
+    <div class="preview-box">Escalated files can be approved or rejected by senior management or the compliance-final role. The decision is recorded in the append-only status log.</div>
+</div>
+{% endblock %}

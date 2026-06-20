@@ -1,8 +1,6 @@
 # operations/ibor/models/fee
 # This file consist of two model [IborFeeSchedule, IborFeeRule]
 
-
-
 from __future__ import annotations
 
 from django.db import models

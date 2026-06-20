@@ -1,0 +1,36 @@
+{# One bank-account row (exactly one primary per application). Expects `form` from the formset or formset.empty_form. #}
+<div class="kyc-row" data-row="bank_account">
+  {{ form.id }}
+  <div class="kyc-row__grid">
+    <div class="kyc-field">
+      {{ form.bank_name.label_tag }}
+      {{ form.bank_name }}
+    </div>
+    <div class="kyc-field">
+      {{ form.account_title.label_tag }}
+      {{ form.account_title }}
+    </div>
+    <div class="kyc-field">
+      {{ form.account_number.label_tag }}
+      {{ form.account_number }}
+    </div>
+    <div class="kyc-field">
+      {{ form.iban.label_tag }}
+      {{ form.iban }}
+    </div>
+    <div class="kyc-field">
+      {{ form.currency.label_tag }}
+      {{ form.currency }}
+    </div>
+    <div class="kyc-field kyc-field--check">
+      {{ form.is_primary }}
+      <span>Primary</span>
+    </div>
+    <div class="kyc-field kyc-field--del">
+  {{ form.DELETE }}
+  <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>
+    Remove
+  </button>
+</div>
+  </div>
+</div>

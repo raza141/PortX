@@ -22,6 +22,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # path("crm/", include("crm.urls")),
     path("ibor/", include("operations.ibor.urls")),
+    # path("governance/kyc/", include(("governance.kyc.urls", "kyc"), namespace="kyc")),
 ]
 
 

@@ -1,0 +1,62 @@
+{% extends "kyc/base_kyc.html" %}
+
+{% block page_title %}PortX · Review Queue{% endblock %}
+{% block nav_review %}active{% endblock %}
+{% block ticker_label %}Review Queue{% endblock %}
+{% block ticker_badge %}Compliance{% endblock %}
+
+{% block ticker_stats %}
+    <span class="ibor-ticker-stat"><span>In queue</span><span class="ibor-ticker-stat-value">{{ applications|length }}</span></span>
+{% endblock %}
+
+{% block main_content %}
+<section class="card">
+    <div class="card-header" style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;">
+        <div>
+            <h2 class="card-title">Review Queue</h2>
+            <div class="card-subtitle">Applications awaiting review or decision within your market scope.</div>
+        </div>
+        <a href="{% url 'kyc:escalations' %}" class="btn btn-xs">Escalations</a>
+    </div>
+    <div class="card-body" style="padding-left:0;padding-right:0;">
+        <table class="table" id="kyc-review-table">
+            <thead>
+                <tr><th style="padding-left:22px;">ID</th><th>Client</th><th>Market</th><th>Status</th><th>Opened</th><th class="right" style="padding-right:22px;">Decision</th></tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                <tr data-application-id="{{ app.pk }}" data-decide-url="{% url 'kyc:decide' app.pk %}">
+                    <td class="mono" style="padding-left:22px;">{{ app.application_number }}</td>
+                    {% if app.applicant_name %}{{ app.applicant_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}
+                    <td>{{ app.onboarding_market.code }}</td>
+                    <td><span class="badge {{ app.application_status|lower }}">{{ app.get_application_status_display }}</span></td>
+                    <td class="mono">{{ app.kyc_opening_date|date:"Y-m-d" }}</td>
+                    <td class="right" style="padding-right:22px;">
+                        <div class="row-actions">
+                            <button class="btn btn-xs" data-action="START_REVIEW">Review</button>
+                            <button class="btn btn-xs" data-action="REQUEST_INFO">Info</button>
+                            <button class="btn btn-xs" data-action="ESCALATE">Escalate</button>
+                            <button class="btn btn-xs ok" data-action="APPROVE">Approve</button>
+                            <button class="btn btn-xs bad" data-action="REJECT">Reject</button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="empty">Nothing awaiting review in your scope.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Queue</div>
+    <div class="summary-row"><span class="summary-label">Items in queue</span><span class="summary-value">{{ applications|length }}</span></div>
+</div>
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Maker–checker</div>
+    <div class="preview-box">An approver can never be the submitter of the same application version. Final sign-off requires the compliance-final role; escalations require senior management.</div>
+</div>
+{% endblock %}

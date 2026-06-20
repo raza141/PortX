@@ -1,0 +1,90 @@
+{% extends "kyc/base.html" %}
+
+{% block page_title %}PortX · KYC Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block ticker_label %}Overview{% endblock %}
+{% block ticker_badge %}KYC{% endblock %}
+
+{% block ticker_stats %}
+    <span class="ibor-ticker-stat"><span>Total Profiles</span><span class="ibor-ticker-stat-value">{{ counts.total }}</span></span>
+    <span class="ibor-ticker-stat"><span>Pending Review</span><span class="ibor-ticker-stat-value">{{ counts.SUBMITTED|add:counts.UNDER_REVIEW|add:counts.ADDL_INFO|add:counts.ESCALATED }}</span></span>
+{% endblock %}
+
+{% block main_content %}
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">KYC Dashboard</h2>
+        <div class="card-subtitle">Overview of KYC profiles, onboarding activity, and current workflow status.</div>
+    </div>
+    <div class="card-body">
+        <div class="stat-grid">
+            <div class="stat">
+                <span class="stat-label">Total Profiles</span>
+                <span class="stat-value">{{ counts.total }}</span>
+            </div>
+            <div class="stat is-ok">
+                <span class="stat-label">Approved</span>
+                <span class="stat-value">{{ counts.APPROVED }}</span>
+            </div>
+            <div class="stat is-warn">
+                <span class="stat-label">Pending Review</span>
+                <span class="stat-value">{{ counts.SUBMITTED|add:counts.UNDER_REVIEW|add:counts.ADDL_INFO|add:counts.ESCALATED }}</span>
+            </div>
+            <div class="stat is-bad">
+                <span class="stat-label">Declined</span>
+                <span class="stat-value">{{ counts.REJECTED }}</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Profiles</h2>
+        <div class="card-subtitle">Latest onboarding records and workflow activity.</div>
+    </div>
+    <div class="card-body" style="padding-left:0;padding-right:0;">
+        <table class="table">
+            <thead>
+                <tr><th style="padding-left:22px;">ID</th><th>Client</th><th>Status</th><th class="right" style="padding-right:22px;">Created</th></tr>
+            </thead>
+            <tbody>
+                {% for app in recent_applications %}
+                <tr>
+                    <td class="mono" style="padding-left:22px;">{{ app.application_number }}</td>
+                    <td>{% if app.applicant_name %}{{ app.applicant_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
+                    <td><span class="badge {{ app.application_status|lower }}">{{ app.get_application_status_display }}</span></td>
+                    <td class="right mono" style="padding-right:22px;">{{ app.kyc_opening_date|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="empty">No KYC profiles available yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Workflow Summary</div>
+    <div class="summary-row"><span class="summary-label">Approved</span><span class="summary-value positive">{{ counts.APPROVED }}</span></div>
+    <div class="summary-row"><span class="summary-label">Pending Review</span><span class="summary-value">{{ counts.SUBMITTED|add:counts.UNDER_REVIEW|add:counts.ADDL_INFO|add:counts.ESCALATED }}</span></div>
+    <div class="summary-row"><span class="summary-label">Declined</span><span class="summary-value negative">{{ counts.REJECTED }}</span></div>
+</div>
+
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Live Preview</div>
+    <div class="preview-box">KYC dashboard is ready for onboarding workflow, screening, review queue, and approval actions.</div>
+</div>
+
+<div class="sidebar-section">
+    <div class="sidebar-section-title">Quick Actions</div>
+    <div class="qa-list">
+        <a class="qa-item" href="{% url 'kyc:start' %}"><span class="qa-label">Submit New KYC</span><span class="qa-tag">NEW</span></a>
+        <a class="qa-item" href="#"><span class="qa-label">Run Screening</span><span class="qa-tag">AML</span></a>
+        <a class="qa-item" href="{% url 'kyc:review-queue' %}"><span class="qa-label">Open Review Queue</span><span class="qa-tag">QUEUE</span></a>
+        <a class="qa-item" href="#"><span class="qa-label">Download Summary</span><span class="qa-tag">REPORT</span></a>
+    </div>
+</div>
+{% endblock %}
