@@ -77,6 +77,12 @@ class KYCDocument(KYCAuditBase):
         db_table = "px_kyc_document"
         verbose_name = "KYC Document"
         verbose_name_plural = "KYC Documents"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["application", "document_type", "joint_holder"],
+                name="uq_kyc_doc_app_type_holder",
+            ),
+        ]
         indexes = [
             models.Index(fields=["application", "document_type"], name="ix_kyc_doc_app_type"),
             models.Index(fields=["verification_status"], name="ix_kyc_doc_verif"),

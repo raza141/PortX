@@ -9,6 +9,7 @@ urlpatterns = [
     path("", dashboard.kyc_dashboard, name="dashboard"),
     path("start/", application.start_kyc, name="start"),
     path("<int:application_id>/wizard/", application.wizard, name="wizard"),
+    path("<int:application_id>/wizard/<str:step>/", application.wizard_step, name="wizard-step"),
     path("<int:application_id>/submit/", application.submit_application, name="submit"),
 
     # Review
@@ -24,5 +25,4 @@ urlpatterns = [
     path("<int:application_id>/section/<str:section>/save/", ajax.save_section, name="ajax-save-section"),
     path("<int:application_id>/validate/", ajax.validate_application, name="ajax-validate"),
     path("<int:application_id>/row/<str:group>/add/", ajax.add_row, name="ajax-add-row"),
-    path("<int:application_id>/rows/save/", ajax.save_rows, name="ajax-save-rows"),
 ]

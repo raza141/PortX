@@ -1,0 +1,79 @@
+{% extends "kyc/base_kyc.html" %}
+
+{% block page_title %}PortX · {{ step.label }}{% endblock %}
+{% block nav_submit %}active{% endblock %}
+{% block ticker_label %}{{ application.application_number }}{% endblock %}
+{% block ticker_badge %}{{ step.label }}{% endblock %}
+
+{% block page_open %}<form method="post" enctype="multipart/form-data" id="kyc-wizard-form" novalidate>{% csrf_token %}{% endblock %}
+
+{% block main_content %}
+  <nav class="kyc-steps" aria-label="KYC sections">
+    {% for s, done in steps_status %}
+      <a class="kyc-step {% if s.key == step.key %}is-current{% endif %} {% if done %}is-complete{% endif %}"
+         href="{% url 'kyc:wizard-step' application.pk s.key %}">
+        <span class="kyc-step__dot" aria-hidden="true"></span>
+        <span class="kyc-step__label">{{ s.label }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% for label, form in single_forms %}
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">{{ label }}</h2></div>
+    <div class="card-body">
+      {% if form.non_field_errors %}<div class="error-banner">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-grid">
+        {% for field in form %}
+        <div class="field{% if field.field.widget.input_type == 'textarea' %} full{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="hint">{{ field.help_text }}</span>{% endif %}
+          {% for e in field.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+
+  {% for group, label, formset, add_url, partial in formsets %}
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">{{ label }}</h2></div>
+    <div class="card-body">
+      {{ formset.management_form }}
+        {% if formset.non_form_errors %}<div class="error-banner">{{ formset.non_form_errors }}</div>{% endif %}
+        <div class="kyc-rows" data-group="{{ group }}">
+            {% for form in formset %}
+                {% if form.errors %}<div class="error-banner">{{ form.errors }}</div>{% endif %}
+                {% include partial %}
+            {% endfor %}
+        </div>
+      <button type="button" class="btn btn-secondary btn-xs"
+              data-add-row="{{ group }}" data-add-url="{{ add_url }}">+ Add</button>
+    </div>
+  </section>
+  {% endfor %}
+{% endblock %}
+
+{% block sidebar %}
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Progress</div>
+    {% for s, done in steps_status %}
+    <div class="summary-row">
+      <span class="summary-label">{{ s.label }}</span>
+      <span class="summary-value {% if done %}positive{% endif %}">{% if done %}&#10003;{% else %}&mdash;{% endif %}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Saved automatically</div>
+    <div class="preview-box">Each step saves before moving on, so you can leave and resume this application later without losing your progress.</div>
+  </div>
+  <div class="sidebar-actions">
+    <button type="submit" class="btn btn-primary">Save &amp; Continue</button>
+    {% if prev_step %}<a class="btn btn-secondary" href="{% url 'kyc:wizard-step' application.pk prev_step %}">Back</a>{% endif %}
+  </div>
+{% endblock %}
+
+{% block page_close %}</form>{% endblock %}

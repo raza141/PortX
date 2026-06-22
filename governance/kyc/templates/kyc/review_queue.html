@@ -27,7 +27,7 @@
                 {% for app in applications %}
                 <tr data-application-id="{{ app.pk }}" data-decide-url="{% url 'kyc:decide' app.pk %}">
                     <td class="mono" style="padding-left:22px;">{{ app.application_number }}</td>
-                    {% if app.applicant_name %}{{ app.applicant_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}
+                    <td>{% if app.applicant_name %}{{ app.applicant_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
                     <td>{{ app.onboarding_market.code }}</td>
                     <td><span class="badge {{ app.application_status|lower }}">{{ app.get_application_status_display }}</span></td>
                     <td class="mono">{{ app.kyc_opening_date|date:"Y-m-d" }}</td>

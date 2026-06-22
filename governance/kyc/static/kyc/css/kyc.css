@@ -1,122 +1,193 @@
 /*
  * governance/kyc/static/kyc/css/kyc.css
  *
- * KYC-specific layout only. Typography, theme and color come from the platform
- * shell / Claude Design tab — this file consumes those as CSS variables and does
- * not hard-code brand hex values. Fallbacks are neutral so the module still reads
- * if a token is absent.
+ * KYC module styling. Consumes the platform shell design tokens defined in
+ * base.html :root (--primary, --border, --surface, --success, etc.) so the
+ * module stays on-brand with IBOR. No hard-coded brand hex values; every
+ * selector is defined exactly once.
  */
 
-.kyc-shell {
-  --kyc-gap: 1rem;
-  --kyc-radius: var(--px-radius, 10px);
-  --kyc-border: var(--px-border-color, rgba(0, 0, 0, 0.10));
-  --kyc-surface: var(--px-surface, #ffffff);
-  --kyc-muted: var(--px-text-muted, #64748b);
-  --kyc-primary: var(--px-primary, #0f766e);
-  --kyc-ok: var(--px-success, #15803d);
-  --kyc-bad: var(--px-danger, #b91c1c);
-  --kyc-warn: var(--px-warning, #b45309);
-  font-family: var(--px-font-ui, "Inter", system-ui, sans-serif);
-  color: var(--px-text, #0f172a);
+/* ===== Wizard step rail (top) ============================================ */
+.kyc-steps{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:8px;
+  margin-bottom:20px;padding:4px;
+}
+.kyc-step{
+  display:flex;align-items:center;gap:8px;padding:8px 14px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--text-muted);
+  font-size:13px;font-weight:600;text-decoration:none;transition:all .15s;
+}
+.kyc-step:hover{border-color:var(--primary);color:var(--primary);}
+.kyc-step.is-current{background:var(--primary-pale);color:var(--primary);border-color:var(--primary);}
+.kyc-step__dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);flex:0 0 auto;}
+.kyc-step.is-current .kyc-step__dot{border-color:var(--primary);}
+.kyc-step.is-complete .kyc-step__dot{background:var(--success);border-color:var(--success);}
+
+/* ===== Repeating formset rows ============================================ */
+/* Outer container = a bordered card holding one record's fields.           */
+.kyc-rows{display:flex;flex-direction:column;gap:14px;margin-bottom:8px;}
+.kyc-row{
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface);padding:14px 16px;
+}
+/* Inner grid = the fields laid out densely.                                */
+.kyc-row__grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px 16px;align-items:start;
+}
+.kyc-field{display:flex;flex-direction:column;gap:4px;}
+.kyc-field label,
+.kyc-field > label{
+  font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--text-muted);
+}
+.kyc-field input:not([type=checkbox]):not([type=radio]):not([type=file]),
+.kyc-field select,
+.kyc-field textarea{
+  width:100%;min-height:40px;padding:8px 11px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--text);font:inherit;font-size:13px;
+}
+.kyc-field input:focus,
+.kyc-field select:focus,
+.kyc-field textarea:focus{
+  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(15,118,110,.12);
+}
+.kyc-field input[type=file]{
+  width:100%;padding:8px 11px;border:1px dashed var(--border);
+  border-radius:var(--radius-sm);background:var(--surface-2);
+  font:inherit;font-size:12px;cursor:pointer;
+}
+.kyc-field input[type=file]::file-selector-button{
+  margin-right:10px;padding:6px 12px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--surface);
+  font:inherit;font-weight:600;color:var(--primary);cursor:pointer;
+}
+/* Remove / delete cell: hidden native checkbox + Remove button. */
+.kyc-del-checkbox{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+.kyc-field--check{
+  flex-direction:row;align-items:center;justify-content:flex-start;
+  gap:8px;align-self:end;padding-bottom:2px;
+}
+.kyc-field--del{
+  flex-direction:row;align-items:center;justify-content:flex-start;
+  gap:6px;align-self:start;margin-top:18px;
+}
+.kyc-field--del .kyc-btn{min-height:40px;}
+
+/* ===== Toggle switch — every checkbox renders as an on/off switch ======== */
+.field input[type=checkbox],
+.kyc-row input[type=checkbox],
+.kyc-field input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;
+  position:relative;width:42px;height:24px;min-height:0;margin:0;padding:0;
+  border:1px solid var(--border);border-radius:999px;
+  background:var(--surface-2);cursor:pointer;box-shadow:none;
+  transition:background .15s,border-color .15s;flex:0 0 auto;vertical-align:middle;
+}
+.field input[type=checkbox]::after,
+.kyc-row input[type=checkbox]::after,
+.kyc-field input[type=checkbox]::after{
+  content:"";position:absolute;top:50%;left:2px;transform:translateY(-50%);
+  width:18px;height:18px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s;
+}
+.field input[type=checkbox]:checked,
+.kyc-row input[type=checkbox]:checked,
+.kyc-field input[type=checkbox]:checked{
+  background:var(--primary);border-color:var(--primary);
+}
+.field input[type=checkbox]:checked::after,
+.kyc-row input[type=checkbox]:checked::after,
+.kyc-field input[type=checkbox]:checked::after{
+  left:22px;
+}
+.field input[type=checkbox]:focus-visible,
+.kyc-row input[type=checkbox]:focus-visible,
+.kyc-field input[type=checkbox]:focus-visible{
+  outline:none;box-shadow:0 0 0 3px rgba(15,118,110,.18);
 }
 
-.kyc-num {
-  font-family: var(--px-font-mono, "IBM Plex Mono", "Courier New", monospace);
-  font-variant-numeric: tabular-nums;
+/* ===== Shell wrapper (optional; tokens fall back to platform values) ===== */
+.kyc-shell{
+  font-family:var(--font-ui,"Inter",system-ui,sans-serif);
+  color:var(--text,#0f172a);
+}
+.kyc-num{
+  font-family:var(--font-mono,"IBM Plex Mono","Courier New",monospace);
+  font-variant-numeric:tabular-nums;
 }
 
-/* Header ------------------------------------------------------------------ */
-.kyc-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--kyc-gap);
-  margin-bottom: 1.25rem;
+/* ===== Header =========================================================== */
+.kyc-header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:16px;margin-bottom:20px;
 }
-.kyc-eyebrow {
-  margin: 0;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--kyc-muted);
+.kyc-eyebrow{
+  margin:0;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-muted);
 }
-.kyc-title { margin: 0.15rem 0 0; font-size: 1.5rem; font-weight: 650; }
-.kyc-header__actions { display: flex; gap: 0.5rem; }
+.kyc-title{margin:.15rem 0 0;font-size:1.5rem;font-weight:700;}
+.kyc-header__actions{display:flex;gap:8px;}
 
-/* Stats ------------------------------------------------------------------- */
-.kyc-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: var(--kyc-gap);
-  margin-bottom: 1.5rem;
+/* ===== Stats ============================================================ */
+.kyc-stat-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:16px;margin-bottom:24px;
 }
-.kyc-stat {
-  background: var(--kyc-surface);
-  border: 1px solid var(--kyc-border);
-  border-radius: var(--kyc-radius);
-  padding: 0.9rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+.kyc-stat{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px;
 }
-.kyc-stat__value { font-size: 1.5rem; font-weight: 650; }
-.kyc-stat__label { font-size: 0.78rem; color: var(--kyc-muted); }
-.kyc-stat--ok .kyc-stat__value { color: var(--kyc-ok); }
-.kyc-stat--bad .kyc-stat__value { color: var(--kyc-bad); }
+.kyc-stat__value{font-size:1.5rem;font-weight:700;}
+.kyc-stat__label{font-size:.78rem;color:var(--text-muted);}
+.kyc-stat--ok .kyc-stat__value{color:var(--success);}
+.kyc-stat--bad .kyc-stat__value{color:var(--danger);}
 
-/* Cards / tables ---------------------------------------------------------- */
-.kyc-card {
-  background: var(--kyc-surface);
-  border: 1px solid var(--kyc-border);
-  border-radius: var(--kyc-radius);
-  padding: 1.1rem 1.25rem;
-  margin-bottom: 1.25rem;
+/* ===== Cards / tables =================================================== */
+.kyc-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;
 }
-.kyc-card--narrow { max-width: 640px; }
-.kyc-card--narrow,
-.kyc-card__title { margin-top: 0; }
-.kyc-card__title { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.75rem; }
-.kyc-card__hint { color: var(--kyc-muted); margin-top: 0; }
+.kyc-card--narrow{max-width:640px;}
+.kyc-card__title{font-size:1.05rem;font-weight:600;margin:0 0 12px;}
+.kyc-card__hint{color:var(--text-muted);margin:0;}
 
-.kyc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.kyc-table th, .kyc-table td {
-  text-align: left;
-  padding: 0.55rem 0.6rem;
-  border-bottom: 1px solid var(--kyc-border);
+.kyc-table{width:100%;border-collapse:collapse;font-size:.9rem;}
+.kyc-table th,.kyc-table td{
+  text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);
 }
-.kyc-table th { font-weight: 600; color: var(--kyc-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
-.kyc-empty { color: var(--kyc-muted); text-align: center; padding: 1.5rem; }
-.kyc-muted { color: var(--kyc-muted); }
-.kyc-link, .kyc-link:visited { color: var(--kyc-primary); text-decoration: none; font-weight: 600; }
-.kyc-link:hover { text-decoration: underline; }
+.kyc-table th{
+  font-weight:600;color:var(--text-muted);font-size:.78rem;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.kyc-empty{color:var(--text-muted);text-align:center;padding:24px;}
+.kyc-muted{color:var(--text-muted);}
+.kyc-link,.kyc-link:visited{color:var(--primary);text-decoration:none;font-weight:600;}
+.kyc-link:hover{text-decoration:underline;}
 
-/* Badges ------------------------------------------------------------------ */
-.kyc-badge {
-  display: inline-block;
-  padding: 0.12rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.74rem;
-  font-weight: 600;
-  border: 1px solid var(--kyc-border);
+/* ===== Badges =========================================================== */
+.kyc-badge{
+  display:inline-block;padding:2px 8px;border-radius:999px;
+  font-size:.74rem;font-weight:600;border:1px solid var(--border);
 }
-.kyc-badge--draft { color: var(--kyc-muted); }
+.kyc-badge--draft{color:var(--text-muted);}
 .kyc-badge--submitted,
-.kyc-badge--under_review { color: var(--kyc-primary); }
+.kyc-badge--under_review{color:var(--primary);}
 .kyc-badge--addl_info,
-.kyc-badge--escalated { color: var(--kyc-warn); }
+.kyc-badge--escalated{color:var(--warning);}
 .kyc-badge--approved,
-.kyc-badge--verified { color: var(--kyc-ok); }
+.kyc-badge--verified{color:var(--success);}
 .kyc-badge--rejected,
-.kyc-badge--unverified { color: var(--kyc-bad); }
+.kyc-badge--unverified{color:var(--danger);}
 
-/* Forms ------------------------------------------------------------------- */
-.kyc-form { display: flex; flex-direction: column; gap: 0.85rem; }
-.kyc-field { display: flex; flex-direction: column; gap: 0.25rem; }
-.kyc-label { font-size: 0.82rem; font-weight: 600; }
-.kyc-help { font-size: 0.74rem; color: var(--kyc-muted); }
-.kyc-error { font-size: 0.76rem; color: var(--kyc-bad); }
-.kyc-subhead { font-size: 0.95rem; font-weight: 650; margin: 1rem 0 0.25rem; }
+/* ===== Single-form fields (section cards) =============================== */
+.kyc-form{display:flex;flex-direction:column;gap:14px;}
+.kyc-label{font-size:.82rem;font-weight:600;}
+.kyc-help{font-size:.74rem;color:var(--text-muted);}
+.kyc-error{font-size:.76rem;color:var(--danger);}
+.kyc-subhead{font-size:.95rem;font-weight:700;margin:16px 0 4px;}
 
 .kyc-input,
 .kyc-form select,
@@ -124,117 +195,58 @@
 .kyc-form input[type="date"],
 .kyc-form input[type="email"],
 .kyc-form input[type="number"],
-.kyc-form textarea {
-  width: 100%;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--kyc-border);
-  border-radius: 8px;
-  background: var(--kyc-surface);
-  font: inherit;
-  color: inherit;
+.kyc-form textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--surface);font:inherit;color:inherit;
 }
 .kyc-input:focus,
 .kyc-form select:focus,
-.kyc-form input[type="text"]:focus,
-.kyc-form input[type="date"]:focus,
-.kyc-form input[type="email"]:focus,
-.kyc-form input[type="number"]:focus,
-.kyc-form textarea:focus {
-  outline: 2px solid var(--kyc-primary);
-  outline-offset: 1px;
+.kyc-form input:focus,
+.kyc-form textarea:focus{
+  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(15,118,110,.12);
+}
+.kyc-form__actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;}
+
+/* ===== Buttons ========================================================== */
+.kyc-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface);color:inherit;font:inherit;font-weight:600;
+  cursor:pointer;text-decoration:none;
+}
+.kyc-btn:hover{border-color:var(--primary);}
+.kyc-btn--primary{background:var(--primary);border-color:var(--primary);color:var(--surface);}
+.kyc-btn--primary[disabled]{opacity:.5;cursor:not-allowed;}
+.kyc-btn--ghost{background:transparent;}
+.kyc-btn--ok{color:var(--success);}
+.kyc-btn--bad{color:var(--danger);}
+.kyc-btn--xs{padding:4px 9px;font-size:.76rem;}
+
+/* ===== Wizard panel / footer =========================================== */
+.kyc-panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;min-height:160px;
+}
+.kyc-wizard__footer{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;margin-top:16px;
 }
 
-.kyc-form__actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
-
-/* Buttons ----------------------------------------------------------------- */
-.kyc-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid var(--kyc-border);
-  background: var(--kyc-surface);
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
+/* ===== Callouts ========================================================= */
+.kyc-callout{
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 14px;margin-bottom:16px;
 }
-.kyc-btn:hover { border-color: var(--kyc-primary); }
-.kyc-btn--primary { background: var(--kyc-primary); border-color: var(--kyc-primary); color: #fff; }
-.kyc-btn--primary[disabled] { opacity: 0.5; cursor: not-allowed; }
-.kyc-btn--ghost { background: transparent; }
-.kyc-btn--ok { color: var(--kyc-ok); }
-.kyc-btn--bad { color: var(--kyc-bad); }
-.kyc-btn--xs { padding: 0.25rem 0.5rem; font-size: 0.76rem; }
+.kyc-callout--warn{border-color:var(--warning);}
+.kyc-callout--ok{border-color:var(--success);}
+.kyc-callout ul{margin:6px 0 0;padding-left:18px;}
+.kyc-decision{display:flex;flex-wrap:wrap;gap:5px;}
 
-/* Wizard ------------------------------------------------------------------ */
-.kyc-steps { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
-.kyc-step {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--kyc-border);
-  border-radius: 999px;
-  background: var(--kyc-surface);
-  cursor: pointer;
-  font: inherit;
+/* ===== Responsive ======================================================= */
+@media (max-width:640px){
+  .kyc-header{flex-direction:column;align-items:flex-start;}
+  .kyc-wizard__footer{flex-direction:column;align-items:stretch;}
 }
-.kyc-step__dot {
-  width: 0.6rem; height: 0.6rem; border-radius: 50%;
-  border: 2px solid var(--kyc-muted);
-}
-.kyc-step.is-complete .kyc-step__dot { background: var(--kyc-ok); border-color: var(--kyc-ok); }
-.kyc-step[aria-current="step"] { border-color: var(--kyc-primary); }
-
-.kyc-panel {
-  background: var(--kyc-surface);
-  border: 1px solid var(--kyc-border);
-  border-radius: var(--kyc-radius);
-  padding: 1.25rem;
-  min-height: 160px;
-}
-.kyc-wizard__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-/* Repeating rows ---------------------------------------------------------- */
-.kyc-rows { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.6rem; }
-.kyc-row {
-  border: 1px solid var(--kyc-border);
-  border-radius: 8px;
-  padding: 0.6rem;
-  background: var(--kyc-surface);
-}
-.kyc-row__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.5rem;
-  align-items: end;
-}
-.kyc-field--del, .kyc-field--check { flex-direction: row; align-items: center; gap: 0.35rem; }
-
-/* Callouts ---------------------------------------------------------------- */
-.kyc-callout { border-radius: 8px; padding: 0.75rem 0.9rem; margin-bottom: 1rem; border: 1px solid var(--kyc-border); }
-.kyc-callout--warn { border-color: var(--kyc-warn); }
-.kyc-callout--ok { border-color: var(--kyc-ok); }
-.kyc-callout ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
-
-.kyc-decision { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-
-@media (max-width: 640px) {
-  .kyc-header { flex-direction: column; align-items: flex-start; }
-  .kyc-wizard__footer { flex-direction: column; align-items: stretch; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
 }

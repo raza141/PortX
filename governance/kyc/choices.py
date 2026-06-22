@@ -33,6 +33,7 @@ class ApplicationStatus(models.TextChoices):
 
 class StatusAction(models.TextChoices):
     """Named workflow transitions consumed by services/workflow.py."""
+    INITIATE = "INITIATE", "Initiate"      # <-- add this line
     SUBMIT = "SUBMIT", "Submit"
     START_REVIEW = "START_REVIEW", "Start Review"
     REQUEST_INFO = "REQUEST_INFO", "Request Additional Info"
@@ -216,12 +217,12 @@ class ReferralType(models.TextChoices):
 # Attachments                                                                 #
 # --------------------------------------------------------------------------- #
 class DocumentType(models.TextChoices):
-    ADDRESS_PROOF = "ADDRESS_PROOF", "Address Proof / Utility Bill"
-    TIN_PROOF = "TIN_PROOF", "TIN Proof"
-    PASSPORT_COPY = "PASSPORT_COPY", "Passport Copy"
     NATIONAL_ID_COPY = "NATIONAL_ID_COPY", "National ID / CNIC / NICOP Copy"
+    PASSPORT_COPY = "PASSPORT_COPY", "Passport"
+    TIN_PROOF = "TIN_PROOF", "TIN Proof"
     BANK_STATEMENT = "BANK_STATEMENT", "Bank Statement"
     SALARY_STATEMENT = "SALARY_STATEMENT", "Salary Statement"
+    ADDRESS_PROOF = "ADDRESS_PROOF", "Address Proof / Utility Bill"
     SOW_PROOF = "SOW_PROOF", "Source-of-Wealth Proof"
     POA_DOCUMENT = "POA_DOCUMENT", "Power-of-Attorney Document"
     COMPANY_LETTER = "COMPANY_LETTER", "Company Letter"

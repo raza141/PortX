@@ -106,4 +106,4 @@ class KYCReferralSource(KYCAuditBase):
         label = self.external_party_name or (
             str(self.staff_profile) if self.staff_profile_id else self.get_referral_type_display()
         )
-        return f"Referral[{self.referral_type}] {label}"
+        return f"Referral - {self.referral_type} -  {label}"

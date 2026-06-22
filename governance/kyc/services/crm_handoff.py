@@ -27,13 +27,12 @@ def on_approved(application, actor):
     )
     email = personal.email if personal else None
 
-    investor, _ = Investor.objects.get_or_create(
-        email=email,
-        defaults={
-            "inv_nm": full_name,
-            "client_class_cd": application.client_classification,
-        },
-    )
+    if email:
+        investor, _ = Investor.objects.get_or_create(
+            email=email, defaults={"inv_nm": full_name, "client_class_cd": application.client_classification})
+    else:
+        investor = Investor.objects.create(
+            inv_nm=full_name, client_class_cd=application.client_classification)
 
     application.investor = investor
     application.updated_by = actor

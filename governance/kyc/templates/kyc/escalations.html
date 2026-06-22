@@ -26,7 +26,7 @@
                     <td class="mono" style="padding-left:22px;">{{ app.application_number }}</td>
                     <td>{% if app.personal_info %}{{ app.personal_info.first_name }} {{ app.personal_info.last_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
                     <td>{{ app.onboarding_market }}</td>
-                    <td>{% if app.risk_rating %}<span class="badge {% if app.risk_rating == 'H' %}rejected{% elif app.risk_rating == 'M' %}escalated{% else %}approved{% endif %}">{{ app.get_risk_rating_display }}</span>{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
+                    <td>{% if app.aml_risk_rating %}<span class="badge {% if app.aml_risk_rating == 'H' %}rejected{% elif app.aml_risk_rating == 'M' %}escalated{% else %}approved{% endif %}">{{ app.get_risk_rating_display }}</span>{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
                     <td class="mono">{{ app.kyc_opening_date|date:"Y-m-d" }}</td>
                     <td class="right" style="padding-right:22px;">
                         <div class="row-actions">

@@ -8,6 +8,7 @@ supports multiple jurisdictions cleanly.
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from datetime import date
 
 from governance.kyc.choices import IdentityDocType
 from governance.kyc.models.base import KYCAuditBase

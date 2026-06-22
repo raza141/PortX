@@ -6,6 +6,8 @@ services/workflow.py — and audit columns are protected. Child records appear a
 inlines for operational review.
 """
 from django.contrib import admin
+# This will create updated_at, created_at like time-stamp
+from governance.kyc.admin.base import KYCAuditAdminMixin
 
 from governance.kyc.models import (
     KYCApplication,
@@ -86,7 +88,7 @@ class PowerOfAttorneyInline(admin.TabularInline):
 
 
 @admin.register(KYCApplication)
-class KYCApplicationAdmin(admin.ModelAdmin):
+class KYCApplicationAdmin(KYCAuditAdminMixin, admin.ModelAdmin):
     list_display = (
         "application_number",
         "onboarding_market",
@@ -117,7 +119,7 @@ class KYCApplicationAdmin(admin.ModelAdmin):
 
 
 @admin.register(KYCReferralSource)
-class KYCReferralSourceAdmin(admin.ModelAdmin):
+class KYCReferralSourceAdmin(KYCAuditAdminMixin, admin.ModelAdmin):
     list_display = ("referral_source_id", "referral_type", "staff_profile", "external_party_name", "external_branch_name")
     list_filter = ("referral_type",)
     search_fields = ("external_party_name", "external_party_code", "external_branch_name")

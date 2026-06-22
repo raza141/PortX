@@ -1,0 +1,66 @@
+{% extends "kyc/base_kyc.html" %}
+
+{% block page_title %}PortX · Review & Submit{% endblock %}
+{% block nav_submit %}active{% endblock %}
+{% block ticker_label %}{{ application.application_number }}{% endblock %}
+{% block ticker_badge %}Review{% endblock %}
+
+{% block main_content %}
+  <nav class="kyc-steps" aria-label="KYC sections">
+    {% for s, done in steps_status %}
+      <a class="kyc-step {% if s.key == step.key %}is-current{% endif %} {% if done %}is-complete{% endif %}"
+         href="{% url 'kyc:wizard-step' application.pk s.key %}">
+        <span class="kyc-step__dot" aria-hidden="true"></span>
+        <span class="kyc-step__label">{{ s.label }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  <section class="card">
+    <div class="card-header">
+      <h2 class="card-title">Review &amp; Submit</h2>
+      <div class="card-subtitle">Confirm every section is complete, then submit for compliance review.</div>
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <tbody>
+          <tr><td>Application</td><td class="right mono">{{ application.application_number }}</td></tr>
+          <tr><td>Applicant</td><td class="right">{{ application.applicant_name|default:"—" }}</td></tr>
+          <tr><td>Market</td><td class="right">{{ application.onboarding_market }}</td></tr>
+          <tr><td>Holding</td><td class="right">{{ application.get_account_holding_type_display }}</td></tr>
+          <tr><td>Classification</td><td class="right">{{ application.get_client_classification_display }}</td></tr>
+        </tbody>
+      </table>
+
+      {% if submit_errors %}
+      <div class="error-banner" style="margin-top:16px;">
+        <strong>Not ready to submit:</strong>
+        <ul style="margin:6px 0 0 18px;">{% for e in submit_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      </div>
+      {% else %}
+      <div class="preview-box" style="margin-top:16px;border-color:var(--success);">All sections are complete. This application is ready for review.</div>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}
+
+{% block sidebar %}
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Progress</div>
+    {% for s, done in steps_status %}
+    <div class="summary-row">
+      <span class="summary-label">{{ s.label }}</span>
+      <span class="summary-value {% if done %}positive{% endif %}">{% if done %}&#10003;{% else %}&mdash;{% endif %}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="sidebar-actions">
+    <form method="post" action="{% url 'kyc:submit' application.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary" {% if not submittable %}disabled{% endif %}>
+        {% if application.application_status == 'ADDL_INFO' %}Resubmit{% else %}Submit for review{% endif %}
+      </button>
+    </form>
+    <a class="btn btn-secondary" href="{% url 'kyc:wizard-step' application.pk 'documents' %}">Back</a>
+  </div>
+{% endblock %}

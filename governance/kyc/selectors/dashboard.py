@@ -49,18 +49,8 @@ def status_counts(user) -> dict:
 
 
 def recent_applications(user, limit: int = 10):
-    from governance.kyc.models import KYCPersonalInfo
-
-    apps = (
+    return (
         base_queryset_for(user)
         .select_related("owner_user", "personal_info")
         .order_by("-updated_at")[:limit]
     )
-
-    for app in apps:
-        try:
-            personal = app.personal_info
-            app.applicant_name = f"{personal.first_name} {personal.last_name}".strip()
-        except KYCPersonalInfo.DoesNotExist:
-            app.applicant_name = ""
-    return apps

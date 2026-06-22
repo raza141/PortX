@@ -1,0 +1,97 @@
+{# Required-document checklist for the wizard Documents step.
+   Each slot is a DocumentSlot (see services/document_slots.py). Required-ness
+   is computed live from document_rules.required_documents(), so slots appear
+   automatically as rules change. #}
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Required Documents</h2>
+    <div class="card-subtitle">Upload each required document. Accepted: PDF, JPG, PNG (max 10&nbsp;MB).</div>
+  </div>
+  <div class="card-body">
+    {% if slots %}
+    <div class="kyc-rows">
+      {% for slot in slots %}
+      <div class="kyc-row">
+        <div class="kyc-row__grid" style="grid-template-columns:1.4fr 1.6fr auto;align-items:center;">
+          <div class="kyc-field">
+            <label>{{ slot.label }} <span style="color:var(--danger);">*</span></label>
+            {% if slot.is_uploaded %}
+              <a class="kyc-link" href="{{ slot.uploaded.file.url }}" target="_blank" rel="noopener">
+                {{ slot.uploaded.file.name|cut:"kyc/documents/" }}
+              </a>
+            {% else %}
+              <span class="kyc-help">No file uploaded yet.</span>
+            {% endif %}
+          </div>
+          <div class="kyc-field">
+            <label>{% if slot.is_uploaded %}Replace file{% else %}Choose file{% endif %}</label>
+            <input type="file" name="{{ slot.field_name }}" accept="{{ accept_attr }}">
+          </div>
+          <div class="kyc-field" style="align-self:center;">
+            {% if slot.is_uploaded %}
+              <span class="kyc-badge kyc-badge--approved">Uploaded</span>
+            {% else %}
+              <span class="kyc-badge kyc-badge--addl_info">Required</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="kyc-empty">No documents are required for this application yet. Requirements appear as you complete earlier sections.</p>
+    {% endif %}
+
+    {% if slot_errors %}
+    <div class="error-banner" style="margin-top:14px;">
+      <ul style="margin:0 0 0 18px;">{% for e in slot_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{# Optional / extra documents already uploaded #}
+{% if extras %}
+<section class="card">
+  <div class="card-header"><h2 class="card-title">Additional Documents</h2></div>
+  <div class="card-body">
+    <div class="kyc-rows">
+      {% for d in extras %}
+      <div class="kyc-row">
+        <div class="kyc-row__grid" style="grid-template-columns:1.4fr 1.6fr;align-items:center;">
+          <div class="kyc-field"><label>{{ d.get_document_type_display }}</label></div>
+          <div class="kyc-field">
+            <a class="kyc-link" href="{{ d.file.url }}" target="_blank" rel="noopener">{{ d.file.name|cut:"kyc/documents/" }}</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# Add an optional extra document (free type + file) #}
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Add an Optional Document</h2>
+    <div class="card-subtitle">Attach any additional supporting document.</div>
+  </div>
+  <div class="card-body">
+    <div class="kyc-row__grid" style="grid-template-columns:1.4fr 1.6fr;align-items:end;">
+      <div class="kyc-field">
+        <label>Document type</label>
+        <select name="extra-document_type">
+          <option value="">--------- (optional)</option>
+          {% for value, label in document_type_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="kyc-field">
+        <label>File</label>
+        <input type="file" name="extra-file" accept="{{ accept_attr }}">
+      </div>
+    </div>
+  </div>
+</section>

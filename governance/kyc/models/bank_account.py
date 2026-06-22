@@ -8,8 +8,10 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.db import models
 
+
 # For IBAN validation
 from schwifty import IBAN
+from schwifty.exceptions import SchwiftyException
 
 from governance.kyc.models.base import KYCAuditBase
 
@@ -32,8 +34,8 @@ def validate_iban(value):
         return
     try:
         IBAN(value)
-    except Exception as exc:
-        raise ValidationError("Enter a valid IBAN.") from exc
+    except SchwiftyException:
+        raise ValidationError("Enter a valid IBAN.")
 
 class KYCBankAccount(KYCAuditBase):
     """A bank account declared on a KYC application."""
@@ -104,7 +106,10 @@ class KYCBankAccount(KYCAuditBase):
     def clean(self):
         super().clean()
         if self.iban:
-            self.iban = IBAN(self.iban).compact
+            try:
+                self.iban = IBAN(self.iban).compact
+            except SchwiftyException:
+                raise ValidationError({"iban": "Enter a valid IBAN."})
 
     def __str__(self) -> str:
         return f"{self.bank_name} {self.account_number}"

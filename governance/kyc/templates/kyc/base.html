@@ -1,90 +1,211 @@
-{% extends "kyc/base.html" %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block page_title %}PortX · KYC{% endblock %}</title>
 
-{% block page_title %}PortX · KYC Dashboard{% endblock %}
-{% block nav_dashboard %}active{% endblock %}
-{% block ticker_label %}Overview{% endblock %}
-{% block ticker_badge %}KYC{% endblock %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-{% block ticker_stats %}
-    <span class="ibor-ticker-stat"><span>Total Profiles</span><span class="ibor-ticker-stat-value">{{ counts.total }}</span></span>
-    <span class="ibor-ticker-stat"><span>Pending Review</span><span class="ibor-ticker-stat-value">{{ counts.SUBMITTED|add:counts.UNDER_REVIEW|add:counts.ADDL_INFO|add:counts.ESCALATED }}</span></span>
-{% endblock %}
+<style>
+/* ============================================================
+   PortX · KYC core design
+   Tokens, nav, ticker, card, form and sidebar system mirror the
+   CEO-approved IBOR shell (operations/ibor/.../base_event.html).
+   KYC keeps its own navigation and data; only the visual language
+   is shared. Inter for UI, IBM Plex Mono for financial figures.
+   ============================================================ */
+:root{
+    --bg:#f2f4f8; --surface:#fff; --surface-2:#f8fafc;
+    --border:#e2e8f0; --border-focus:#0f766e;
+    --text:#0f172a; --text-muted:#64748b; --text-light:#94a3b8;
+    --primary:#0f766e; --primary-dark:#115e59; --primary-pale:#f0fdf9;
+    --danger:#dc2626; --danger-pale:#fef2f2;
+    --success:#16a34a;
+    --warning:#f59e0b; --warning-pale:#fffbeb;
+    --radius-sm:8px; --radius:14px;
+    --shadow-sm:0 1px 4px rgba(15,23,42,.06);
+    --shadow:0 8px 28px rgba(15,23,42,.08);
+    --nav-h:56px; --ticker-h:44px; --sidebar-w:340px;
+    --font-ui:"Inter",-apple-system,Arial,sans-serif;
+    --font-mono:"IBM Plex Mono","Courier New",Courier,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);font-family:var(--font-ui);color:var(--text);font-size:14px;line-height:1.6;}
+.mono,.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
 
-{% block main_content %}
-<section class="card">
-    <div class="card-header">
-        <h2 class="card-title">KYC Dashboard</h2>
-        <div class="card-subtitle">Overview of KYC profiles, onboarding activity, and current workflow status.</div>
-    </div>
-    <div class="card-body">
-        <div class="stat-grid">
-            <div class="stat">
-                <span class="stat-label">Total Profiles</span>
-                <span class="stat-value">{{ counts.total }}</span>
-            </div>
-            <div class="stat is-ok">
-                <span class="stat-label">Approved</span>
-                <span class="stat-value">{{ counts.APPROVED }}</span>
-            </div>
-            <div class="stat is-warn">
-                <span class="stat-label">Pending Review</span>
-                <span class="stat-value">{{ counts.SUBMITTED|add:counts.UNDER_REVIEW|add:counts.ADDL_INFO|add:counts.ESCALATED }}</span>
-            </div>
-            <div class="stat is-bad">
-                <span class="stat-label">Declined</span>
-                <span class="stat-value">{{ counts.REJECTED }}</span>
-            </div>
+/* NAV */
+.ibor-nav{position:sticky;top:0;z-index:200;height:var(--nav-h);background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;gap:24px;}
+.ibor-nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.ibor-nav-brand-icon{width:32px;height:32px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;}
+.ibor-nav-brand-label{font-size:13px;font-weight:700;color:var(--text);}
+.ibor-nav-brand-sub{font-size:11px;color:var(--text-muted);}
+.ibor-nav-tabs{display:flex;align-items:center;gap:4px;flex:1;justify-content:center;}
+.ibor-nav-tab{padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:var(--text-muted);text-decoration:none;transition:background .15s,color .15s;white-space:nowrap;}
+.ibor-nav-tab:hover{background:var(--surface-2);color:var(--text);}
+.ibor-nav-tab.active{background:var(--primary-pale);color:var(--primary);}
+.ibor-nav-right{display:flex;align-items:center;gap:14px;}
+.ibor-nav-date{font-size:12px;color:var(--text-muted);}
+.ibor-nav-user{width:30px;height:30px;background:var(--primary-pale);border:1.5px solid var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--primary);}
+
+/* TICKER / SUB-HEADER */
+.ibor-ticker{position:sticky;top:var(--nav-h);z-index:100;height:var(--ticker-h);background:rgba(248,250,252,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;}
+.ibor-ticker-left{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:700;color:var(--text);}
+.ibor-ticker-badge{font-size:12px;font-weight:700;color:var(--primary);}
+.ibor-ticker-right{display:flex;align-items:center;gap:24px;font-size:13px;color:var(--text-muted);}
+.ibor-ticker-stat{display:flex;align-items:center;gap:8px;}
+.ibor-ticker-stat-value{font-weight:800;color:var(--text);font-family:var(--font-mono);}
+
+/* PAGE */
+.ibor-page{display:grid;grid-template-columns:minmax(0,1fr) var(--sidebar-w);min-height:calc(100vh - var(--nav-h) - var(--ticker-h));align-items:start;}
+.ibor-main{padding:24px 28px 60px;display:grid;gap:20px;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;}
+.card-header{padding:18px 22px 12px;}
+.card-title{font-size:17px;font-weight:700;color:var(--text);}
+.card-subtitle{font-size:13px;color:var(--text-muted);margin-top:4px;}
+.card-body{padding:6px 22px 22px;}
+
+/* STAT TILES */
+.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+.stat{border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px 20px;display:flex;flex-direction:column;gap:8px;background:var(--surface);}
+.stat-label{font-size:13px;font-weight:600;color:var(--text-muted);}
+.stat-value{font-size:30px;font-weight:800;letter-spacing:-.01em;}
+.stat.is-ok .stat-value{color:var(--success);}
+.stat.is-warn .stat-value{color:var(--warning);}
+.stat.is-bad .stat-value{color:var(--danger);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:12px;font-weight:700;color:#475569;letter-spacing:.02em;}
+.field input,.field select,.field textarea{width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--text);font-size:14px;font-family:inherit;transition:border-color .15s,box-shadow .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(15,118,110,.12);}
+.field textarea{min-height:70px;resize:vertical;}
+.field .hint{font-size:11px;color:var(--text-muted);}
+.field .err{font-size:11px;color:var(--danger);}
+
+/* TABLE */
+.table{width:100%;border-collapse:collapse;font-size:13px;}
+.table th{text-align:left;padding:12px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.table td{padding:13px 12px;border-bottom:1px solid var(--border);}
+.table tr:last-child td{border-bottom:none;}
+.table .right{text-align:right;}
+.empty{padding:48px 24px;text-align:center;color:var(--text-muted);}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid var(--border);}
+.badge.draft{color:var(--text-muted);}
+.badge.submitted,.badge.under_review{color:var(--primary);background:var(--primary-pale);border-color:transparent;}
+.badge.addl_info,.badge.escalated{color:var(--warning);background:var(--warning-pale);border-color:transparent;}
+.badge.approved,.badge.verified{color:var(--success);background:#f0fdf4;border-color:transparent;}
+.badge.rejected,.badge.unverified{color:var(--danger);background:var(--danger-pale);border-color:transparent;}
+
+/* MESSAGES / ERRORS */
+.messages,.error-banner{display:grid;gap:8px;}
+.message{padding:10px 14px;border-radius:var(--radius-sm);background:var(--primary-pale);color:var(--primary-dark);font-size:13px;}
+.error-banner{padding:12px 14px;border-radius:var(--radius-sm);background:var(--danger-pale);color:var(--danger);font-size:13px;}
+
+/* SIDEBAR */
+.ibor-sidebar{position:sticky;top:calc(var(--nav-h) + var(--ticker-h));height:calc(100vh - var(--nav-h) - var(--ticker-h));border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow-y:auto;}
+.sidebar-section{padding:20px 22px;border-bottom:1px solid var(--border);}
+.sidebar-section-title{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;}
+.summary-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;padding:6px 0;}
+.summary-label{color:var(--text-muted);}
+.summary-value{font-weight:800;color:var(--text);text-align:right;font-family:var(--font-mono);}
+.summary-value.positive{color:var(--success);}
+.summary-value.negative{color:var(--danger);}
+.summary-value.warn{color:var(--warning);}
+.summary-divider{height:1px;background:var(--border);margin:8px 0;}
+.preview-box{padding:14px 16px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:13px;color:var(--text-muted);line-height:1.7;}
+
+/* QUICK ACTIONS */
+.qa-list{display:grid;gap:10px;}
+.qa-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);text-decoration:none;color:var(--text);transition:border-color .15s,background .15s;}
+.qa-item:hover{border-color:var(--primary);background:var(--primary-pale);}
+.qa-label{font-size:13px;font-weight:700;}
+.qa-tag{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--primary);}
+
+/* BUTTONS */
+.btn{width:100%;min-height:46px;padding:0 18px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;font-family:inherit;text-decoration:none;}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-secondary{background:#e2e8f0;color:#0f172a;}
+.btn-secondary:hover{background:#cbd5e1;}
+.btn-xs{min-height:32px;width:auto;padding:0 12px;font-size:12px;border:1px solid var(--border);background:#fff;color:var(--text);}
+.btn-xs:hover{border-color:var(--primary);color:var(--primary);}
+.btn-xs.ok{color:var(--success);}
+.btn-xs.bad{color:var(--danger);}
+.row-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+.sidebar-actions{padding:20px 22px 24px;display:grid;gap:10px;margin-top:auto;}
+
+/* RESPONSIVE */
+@media(max-width:1020px){.ibor-page{grid-template-columns:1fr;}.ibor-sidebar{position:static;height:auto;border-left:none;border-top:1px solid var(--border);}.stat-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:760px){.form-grid{grid-template-columns:1fr;}.ibor-nav-tabs{display:none;}}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+<!-- ===== Top Nav (KYC) ===== -->
+<nav class="ibor-nav">
+    <a class="ibor-nav-brand" href="{% url 'kyc:dashboard' %}">
+        <div class="ibor-nav-brand-icon">P</div>
+        <div>
+            <div class="ibor-nav-brand-label">PortX</div>
+            <div class="ibor-nav-brand-sub">Governance / KYC</div>
         </div>
+    </a>
+
+    <div class="ibor-nav-tabs">
+        <a href="{% url 'kyc:dashboard' %}"     class="ibor-nav-tab {% block nav_dashboard %}{% endblock %}">Dashboard</a>
+        <a href="{% url 'kyc:start' %}"          class="ibor-nav-tab {% block nav_submit %}{% endblock %}">Submit KYC</a>
+        <a href="{% url 'kyc:review-queue' %}"   class="ibor-nav-tab {% block nav_review %}{% endblock %}">Review Queue</a>
+        <a href="#"                              class="ibor-nav-tab {% block nav_documents %}{% endblock %}" title="Documents index (coming soon)">Documents</a>
     </div>
-</section>
 
-<section class="card">
-    <div class="card-header">
-        <h2 class="card-title">Recent Profiles</h2>
-        <div class="card-subtitle">Latest onboarding records and workflow activity.</div>
+    <div class="ibor-nav-right">
+        <span class="ibor-nav-date">{% now "j M Y" %}</span>
+        <div class="ibor-nav-user">{% block nav_user_initial %}R{% endblock %}</div>
     </div>
-    <div class="card-body" style="padding-left:0;padding-right:0;">
-        <table class="table">
-            <thead>
-                <tr><th style="padding-left:22px;">ID</th><th>Client</th><th>Status</th><th class="right" style="padding-right:22px;">Created</th></tr>
-            </thead>
-            <tbody>
-                {% for app in recent_applications %}
-                <tr>
-                    <td class="mono" style="padding-left:22px;">{{ app.application_number }}</td>
-                    <td>{% if app.applicant_name %}{{ app.applicant_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
-                    <td><span class="badge {{ app.application_status|lower }}">{{ app.get_application_status_display }}</span></td>
-                    <td class="right mono" style="padding-right:22px;">{{ app.kyc_opening_date|date:"Y-m-d" }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" class="empty">No KYC profiles available yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+</nav>
+
+<!-- ===== Sub-header / ticker ===== -->
+<div class="ibor-ticker">
+    <div class="ibor-ticker-left">
+        <span>{% block ticker_label %}Overview{% endblock %}</span>
+        <span class="ibor-ticker-badge">{% block ticker_badge %}KYC{% endblock %}</span>
     </div>
-</section>
-{% endblock %}
-
-{% block sidebar %}
-<div class="sidebar-section">
-    <div class="sidebar-section-title">Workflow Summary</div>
-    <div class="summary-row"><span class="summary-label">Approved</span><span class="summary-value positive">{{ counts.APPROVED }}</span></div>
-    <div class="summary-row"><span class="summary-label">Pending Review</span><span class="summary-value">{{ counts.SUBMITTED|add:counts.UNDER_REVIEW|add:counts.ADDL_INFO|add:counts.ESCALATED }}</span></div>
-    <div class="summary-row"><span class="summary-label">Declined</span><span class="summary-value negative">{{ counts.REJECTED }}</span></div>
-</div>
-
-<div class="sidebar-section">
-    <div class="sidebar-section-title">Live Preview</div>
-    <div class="preview-box">KYC dashboard is ready for onboarding workflow, screening, review queue, and approval actions.</div>
-</div>
-
-<div class="sidebar-section">
-    <div class="sidebar-section-title">Quick Actions</div>
-    <div class="qa-list">
-        <a class="qa-item" href="{% url 'kyc:start' %}"><span class="qa-label">Submit New KYC</span><span class="qa-tag">NEW</span></a>
-        <a class="qa-item" href="#"><span class="qa-label">Run Screening</span><span class="qa-tag">AML</span></a>
-        <a class="qa-item" href="{% url 'kyc:review-queue' %}"><span class="qa-label">Open Review Queue</span><span class="qa-tag">QUEUE</span></a>
-        <a class="qa-item" href="#"><span class="qa-label">Download Summary</span><span class="qa-tag">REPORT</span></a>
+    <div class="ibor-ticker-right">
+        {% block ticker_stats %}{% endblock %}
     </div>
 </div>
-{% endblock %}
+
+<!-- ===== Messages ===== -->
+{% if messages %}
+<div style="padding:12px 28px 0;">
+    <div class="messages">{% for message in messages %}<div class="message">{{ message }}</div>{% endfor %}</div>
+</div>
+{% endif %}
+
+<!-- ===== Non-field errors ===== -->
+{% block non_field_errors %}{% endblock %}
+
+<!-- ===== Page ===== -->
+{% block page_open %}{% endblock %}
+<div class="ibor-page">
+    <div class="ibor-main">{% block main_content %}{% endblock %}</div>
+    <aside class="ibor-sidebar">{% block sidebar %}{% endblock %}</aside>
+</div>
+{% block page_close %}{% endblock %}
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

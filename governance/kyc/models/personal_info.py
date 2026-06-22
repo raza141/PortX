@@ -5,6 +5,7 @@ Universal identity and contact data for the principal applicant. Identity
 documents are normalized into a separate child table (KYCIdentityDocument).
 """
 from django.db import models
+from datetime import date
 from django.core.exceptions import ValidationError
 
 from governance.kyc.choices import (

@@ -23,14 +23,15 @@
       {{ form.currency }}
     </div>
     <div class="kyc-field kyc-field--check">
-      {{ form.is_primary }}
+      <label class="kyc-toggle">
+        {{ form.is_primary }}
+        <span class="kyc-toggle__slider"></span>
+      </label>
       <span>Primary</span>
     </div>
-    <div class="kyc-field kyc-field--del">
-  {{ form.DELETE }}
-  <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>
-    Remove
-  </button>
-</div>
+        <div class="kyc-field kyc-field--del">
+        <span class="kyc-del-checkbox">{{ form.DELETE }}</span>
+        <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>Remove</button>
+    </div>
   </div>
 </div>

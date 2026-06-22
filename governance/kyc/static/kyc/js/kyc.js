@@ -148,7 +148,10 @@
         const container = root.querySelector(`.kyc-rows[data-group="${group}"]`);
         if (!url || !container) return;
 
-        const index = container.querySelectorAll(".kyc-row").length;
+        const total = document.querySelector(`input[name="${group}-TOTAL_FORMS"]`);
+        const index = total
+          ? parseInt(total.value, 10)
+          : container.querySelectorAll(".kyc-row").length;
 
         getJSON(url + "?index=" + index).then(({ ok, data }) => {
           if (ok && data.ok) {
@@ -156,7 +159,7 @@
             tmp.innerHTML = data.html.trim();
             if (tmp.firstElementChild) {
               container.appendChild(tmp.firstElementChild);
-              updateTotalForms(container, group);
+              bumpTotalForms(group);
               bindSectionForms(container);
             }
           } else {
@@ -172,32 +175,24 @@
     root.addEventListener("click", (event) => {
       const btn = event.target.closest("[data-remove-row]");
       if (!btn) return;
-
       const row = btn.closest(".kyc-row");
       if (!row) return;
 
-      const container = row.closest(".kyc-rows");
-      const group = container ? container.dataset.group : null;
-
       const del = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
       if (del) {
-        del.checked = true;
+        del.checked = true;        // saved row -> mark for deletion, keep in DOM
         row.style.display = "none";
       } else {
-        row.remove();
+        row.remove();              // unsaved row -> just drop it
       }
-
-      if (container && group) {
-        updateTotalForms(container, group);
-      }
+      // TOTAL_FORMS is intentionally NOT changed on remove.
     });
   }
 
-  function updateTotalForms(container, group) {
+  // Increment TOTAL_FORMS by exactly 1 when adding. Never recompute from DOM.
+  function bumpTotalForms(group) {
     const total = document.querySelector(`input[name="${group}-TOTAL_FORMS"]`);
-    if (total) {
-      total.value = container.querySelectorAll('.kyc-row:not([style*="display: none"])').length;
-    }
+    if (total) total.value = String(parseInt(total.value, 10) + 1);
   }
 
   // --- Progress indicator ------------------------------------------------- //

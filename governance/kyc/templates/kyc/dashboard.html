@@ -51,10 +51,12 @@
             <tbody>
                 {% for app in recent_applications %}
                 <tr>
-                    <td class="mono" style="padding-left:22px;">{{ app.application_number }}</td>
-                    {% if app.applicant_name %}{{ app.applicant_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}
+                    <td class="mono" style="padding-left:22px;">{% if app.application_status == 'DRAFT' or app.application_status == 'ADDL_INFO' %}<a href="{% url 'kyc:wizard' app.pk %}" style="color:var(--primary);font-weight:700;text-decoration:none;">{{ app.application_number }}</a>
+                    {% else %}{{ app.application_number }}{% endif %}</td>
+                    <td>{% if app.applicant_name %}{{ app.applicant_name }}{% else %}<span style="color:var(--text-light);">—</span>{% endif %}</td>
                     <td><span class="badge {{ app.application_status|lower }}">{{ app.get_application_status_display }}</span></td>
-                    <td class="right mono" style="padding-right:22px;">{{ app.kyc_opening_date|date:"Y-m-d" }}</td>
+                    <td class="right mono" style="padding-right:22px;">{{ app.kyc_opening_date|date:"Y-m-d" }}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="4" class="empty">No KYC profiles available yet.</td></tr>

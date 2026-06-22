@@ -10,11 +10,9 @@
       {{ form.file.label_tag }}
       {{ form.file }}
     </div>
-    <div class="kyc-field kyc-field--del">
-  {{ form.DELETE }}
-  <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>
-    Remove
-  </button>
-</div>
+        <div class="kyc-field kyc-field--del">
+        <span class="kyc-del-checkbox">{{ form.DELETE }}</span>
+        <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>Remove</button>
+    </div>
   </div>
 </div>

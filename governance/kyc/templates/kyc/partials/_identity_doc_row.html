@@ -2,10 +2,12 @@
 <div class="kyc-row" data-row="identity">
   {{ form.id }}
   <div class="kyc-row__grid">
+    {% if form.joint_holder %}
     <div class="kyc-field">
       {{ form.joint_holder.label_tag }}
       {{ form.joint_holder }}
     </div>
+    {% endif %}
     <div class="kyc-field">
       {{ form.identity_doc_type.label_tag }}
       {{ form.identity_doc_type }}
@@ -26,11 +28,9 @@
       {{ form.issuing_country.label_tag }}
       {{ form.issuing_country }}
     </div>
-    <div class="kyc-field kyc-field--del">
-  {{ form.DELETE }}
-  <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>
-    Remove
-  </button>
-</div>
+        <div class="kyc-field kyc-field--del">
+        <span class="kyc-del-checkbox">{{ form.DELETE }}</span>
+        <button type="button" class="kyc-btn kyc-btn--xs kyc-btn--bad" data-remove-row>Remove</button>
+    </div>
   </div>
 </div>

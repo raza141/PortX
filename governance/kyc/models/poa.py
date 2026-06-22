@@ -4,6 +4,7 @@ governance/kyc/models/poa.py
 Power-of-attorney / authorized persons. Conditional on the application; the
 document_type drives which supporting upload is required (see document_rules).
 """
+
 from django.db import models
 from django.db.models import Q
 from django.core.exceptions import ValidationError
@@ -72,25 +73,16 @@ class KYCPowerOfAttorney(KYCAuditBase):
         ]
 
     def clean(self):
-        passport_doc_types = {
-            POADocumentType.PASSPORT,
-        }
-        national_id_doc_types = {
-            POADocumentType.NATIONAL_ID,
-            POADocumentType.CNIC,
-            POADocumentType.NICOP,
-        }
-
-        if self.document_type in passport_doc_types and not self.passport_number:
+        super().clean()
+        # A POA row is only meaningful with a holder and a document type.
+        if self.person_name and not self.document_type:
             raise ValidationError(
-                {"passport_number": "Passport number is required for passport-based POA records."}
+                {"document_type": "Select the document type for this authorised person."}
             )
-
-        if self.document_type in national_id_doc_types and not self.national_id_number:
+        if self.document_type and not self.person_name:
             raise ValidationError(
-                {"national_id_number": "National ID number is required for ID-based POA records."}
+                {"person_name": "Enter the authorised person's name."}
             )
-
         # TODO(KYC-POA-001): Align required fields with final POADocumentType values
         # and document_rules service once upload rules are finalized.
 

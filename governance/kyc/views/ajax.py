@@ -59,7 +59,7 @@ def save_section(request, application_id, section):
 
     kwargs = {"instance": instance}
     if section in ("personal", "residence", "source_of_wealth"):
-        kwargs["market"] = application.onboarding_market
+        kwargs["market"] = application.onboarding_market.code
 
     form = form_class(request.POST, **kwargs)
     if not form.is_valid():

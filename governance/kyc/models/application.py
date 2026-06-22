@@ -10,6 +10,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from datetime import date
 
 from governance.kyc.choices import (
     AccountHoldingType,
@@ -137,10 +138,19 @@ class KYCApplication(KYCAuditBase):
         indexes = [
             models.Index(fields=["onboarding_market", "application_status"], name="ix_kyc_app_market_status"),
         ]
+    @property
+    def applicant_name(self):
+        personal = getattr(self, "personal_info", None)
+        if not personal:
+            return ""
+        return f"{personal.first_name} {personal.last_name}".strip()
+
     def clean(self):
         """Validate application lineage and reserved-field rules."""
         if self.supersedes_id and self.supersedes_id == self.application_id:
             raise ValidationError({"supersedes": "An application cannot supersede itself."})
+
+
 
     def __str__(self) -> str:
         return f"{self.application_number} [{self.application_status}]"

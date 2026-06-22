@@ -8,12 +8,13 @@ registered read-mostly (Phase 2 wires the live provider).
 from django.contrib import admin
 
 from governance.kyc.models import KYCDocument, KYCThirdPartyCheck
+from governance.kyc.admin.base import KYCAuditAdminMixin
 
 _AUDIT_RO = ("created_by", "updated_by", "created_at", "updated_at")
 
 
 @admin.register(KYCDocument)
-class KYCDocumentAdmin(admin.ModelAdmin):
+class KYCDocumentAdmin(KYCAuditAdminMixin, admin.ModelAdmin):
     list_display = (
         "document_id",
         "application",
@@ -32,7 +33,7 @@ class KYCDocumentAdmin(admin.ModelAdmin):
 
 
 @admin.register(KYCThirdPartyCheck)
-class KYCThirdPartyCheckAdmin(admin.ModelAdmin):
+class KYCThirdPartyCheckAdmin(KYCAuditAdminMixin, admin.ModelAdmin):
     list_display = (
         "third_party_check_id",
         "application",
